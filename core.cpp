@@ -794,7 +794,7 @@ void Core::loadQuestionnaire(qint32 chatId, qint32 userId)
 {
     setUserState(chatId, userId, ::User::EUserState::LOAD_QUESTIONNAIRE);
 
-    _bot->sendMessage(chatId, "Please send file contain new questionnire");
+    _bot->sendMessage(chatId, tr("Please send file contain new questionnire"));
 }
 
 void Core::saveQuestionnaire(qint32 chatId, qint32 userId)

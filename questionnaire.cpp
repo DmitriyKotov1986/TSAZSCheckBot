@@ -563,6 +563,8 @@ void Questionnaire::saveResults(qint32 userId, const QUuid &uuid, const QDateTim
                 {
                     continue;
                 }
+
+                answerText = questionInfo->text();
                 break;
             }
             case Question::EQuestionType::DELETED:
