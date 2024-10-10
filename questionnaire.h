@@ -11,6 +11,8 @@
 #include <QStringList>
 #include <QUuid>
 #include <QJsonDocument>
+#include <QVariant>
+#include <QJsonParseError>
 
 //My
 #include <Common/common.h>
@@ -24,23 +26,23 @@ class Questionnaire
 
 public:
     using QuestionsIndexList = std::list<qint32>;
-    using Questions = std::map<qint32, qint32>; //Key -  QuestionID, value - AnswerID
+    using AnswersQuestions = std::map<qint32, QVariant>; //Key -  QuestionID, value - AnswerID or answer text
 
 public:
     explicit Questionnaire(const Common::DBConnectionInfo& dbConnectionInfo, QObject* parent = nullptr);
 
     void loadFromDB();
-    void loadFromFile(const QString& fileName);
+    QString loadFromString(const QString& data);
     QString toString();
 
     const Question& question(qint32 index) const;
     qint32 questionCount() const;
     qint32 questionPosition(qint32 index) const;
 
-    Questions makeQuesions() const;
-    void saveResults(qint32 userId, const QUuid& uuid, const QDateTime startDateTime, const Questions& questions);
+    AnswersQuestions makeAnswersQuestions() const;
+    void saveResults(qint32 userId, const QUuid& uuid, const QDateTime startDateTime, const AnswersQuestions& questions);
 
-    QJsonDocument getAllResults();
+    QString getAllResults(const QDateTime& startDateTime, const QDateTime& endDateTime);
 
 signals:
     void errorOccured(Common::EXIT_CODE errorCode, const QString &errorString);
@@ -49,8 +51,28 @@ private:
     Questionnaire() = delete;
     Q_DISABLE_COPY_MOVE(Questionnaire)
 
+    static QString QJsonParseErrorToString(QJsonParseError::ParseError error);
+
 private:
     using QuestionsMap = std::map<qint32, std::unique_ptr<Question>>;
+
+    struct AnswerData
+    {
+        qint32 questionId = 0;
+        qint32 index = 0;
+        QString text;
+        Question::EAnswerType type = Question::EAnswerType::UNDEFINED;
+    };
+
+    struct QuestionData
+    {
+        qint32 index = 0;
+        QString text;
+        Question::EQuestionType type = Question::EQuestionType::UNDEFINED;
+        std::map<qint32, AnswerData> answers;
+    };
+
+    using QuestionsData = std::map<qint32, QuestionData>;
 
 private:
     const Common::DBConnectionInfo& _dbConnectionInfo;

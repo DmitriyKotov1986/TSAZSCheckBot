@@ -15,14 +15,14 @@ void ButtonData::setParam(const QString &paramName, const QString &paramValue)
     _params.insert(paramName, paramValue);
 }
 
-static const QString defaultValue = QString();
+Q_GLOBAL_STATIC(QString, defaultValue, QString());
 
 const QString &ButtonData::getParam(const QString &paramName) const
 {
     const auto params_it = _params.find(paramName);
     if (params_it == _params.end())
     {
-        return defaultValue;
+        return *defaultValue;
     }
 
     return params_it.value();
@@ -73,4 +73,19 @@ QString ButtonData::toString() const
     }
 
     return result;
+}
+
+bool ButtonData::isExist(const QString &paramName) const
+{
+    return _params.contains(paramName);
+}
+
+bool ButtonData::isEmpty() const
+{
+    return _params.empty();
+}
+
+qsizetype ButtonData::count() const
+{
+    return _params.size();
 }

@@ -1,5 +1,5 @@
 //STL
-#include <exception>
+#include <stdexcept>
 
 //Qt
 #include <QSqlQuery>
@@ -9,120 +9,6 @@
 static const QString DB_CONNECTION_NAME = "UsersDB";
 
 using namespace Common;
-
-///////////////////////////////////////////////////////////////////////////////
-/// class User
-User::EUserRole User::intToEUserRole(quint8 role)
-{
-    switch (role)
-    {
-    case static_cast<quint8>(EUserRole::ADMIN): return EUserRole::ADMIN;
-    case static_cast<quint8>(EUserRole::USER): return EUserRole::USER;
-    case static_cast<quint8>(EUserRole::DELETED): return EUserRole::DELETED;
-    case static_cast<quint8>(EUserRole::NO_CONFIRMED): return EUserRole::NO_CONFIRMED;
-    case static_cast<quint8>(EUserRole::UNDEFINED):
-    default:
-        break;
-    }
-
-    return EUserRole::UNDEFINED;
-}
-
-User::User(qint64 telegramID, const QString &firstName, const QString lastName, const QString userName, const QDateTime &addDateTime /* = QDateTime::currentDateTime() */)
-    : _telegramID(telegramID)
-    , _firstName(firstName)
-    , _lastName(lastName)
-    , _userName(userName)
-    , _addDateTime(addDateTime)
-{
-}
-
-User::~User()
-{
-}
-
-User::EUserRole User::role() const
-{
-    return _role;
-}
-
-void User::setRole(EUserRole role)
-{
-    _role = role;
-}
-
-qint32 User::startQuestionnaire(Questionnaire *questionnaire)
-{
-    Q_CHECK_PTR(questionnaire);
-
-    _questionnaire = questionnaire;
-    _questions = _questionnaire->makeQuesions();
-    _currentQuestions = _questions.begin();
-    _startDateTime = QDateTime::currentDateTime();
-    _currentUUID = QUuid::createUuid();
-    _maxQuestionId = _currentQuestions != _questions.end() ? _currentQuestions->first : -1;
-
-    return _currentQuestions != _questions.end() ? _currentQuestions->first : -1;
-}
-
-qint32 User::setAnswer(qint32 questionID, qint32 answerID)
-{
-    auto questions_it = _questions.find(questionID);
-    if (questions_it == _questions.end())
-    {
-        Q_ASSERT(false);
-    }
-
-    questions_it->second = answerID;
-
-    _currentQuestions = questions_it;
-
-    return nextQuestionId();
-}
-
-qint32 User::nextQuestionId()
-{
-    if (_currentQuestions != _questions.end())
-    {
-        _currentQuestions = std::next(_currentQuestions);
-        _maxQuestionId = std::max(_maxQuestionId, _currentQuestions->first);
-    }
-    return _currentQuestions != _questions.end() ? _currentQuestions->first : -1;
-}
-
-qint32 User::prevQuestionId()
-{
-    if (_currentQuestions != _questions.end())
-    {
-        _currentQuestions = std::prev(_currentQuestions);
-    }
-    return _currentQuestions != _questions.end() ? _currentQuestions->first : -1;
-}
-
-void User::finishQuestionnaire()
-{
-    Q_CHECK_PTR(_questionnaire);
-
-    _questionnaire->saveResults(_telegramID, _currentUUID, _startDateTime, _questions);
-
-    clear();
-}
-
-void User::cancelQuestionnaire()
-{
-    Q_CHECK_PTR(_questionnaire);
-
-    clear();
-}
-
-void User::clear()
-{
-    _questions.clear();
-    _currentQuestions = _questions.end();
-    _questionnaire = nullptr;
-    _currentUUID = QUuid();
-    _maxQuestionId = -1;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// class Users
@@ -153,11 +39,6 @@ void Users::loadFromDB()
         return;
     }
 
-    const auto queryText =
-        QString("SELECT `ID`, `TelegramID`, `FirstName`, `LastName`, `UserName`, `AddDateTime`, `Role` "
-                "FROM `Users` "
-                "ORDER BY `ID` ");
-
     class LoadException
         : public std::runtime_error
     {
@@ -171,12 +52,18 @@ void Users::loadFromDB()
 
     };
 
+    QStringList userIdList;
     try
     {
         transactionDB(_db);
 
         QSqlQuery query(_db);
         query.setForwardOnly(true);
+
+        QString queryText =
+            QString("SELECT `ID`, `TelegramID`, `FirstName`, `LastName`, `UserName`, `Role`, `State`"
+                    "FROM `Users` "
+                    "ORDER BY `ID` ");
 
         DBQueryExecute(_db, query, queryText);
 
@@ -189,27 +76,83 @@ void Users::loadFromDB()
                 throw LoadException(QString("User ID cannot be null or less in [Users]/TelegramID. Record: %1").arg(recordId));
             }
 
-            User tmp(userId,
-            query.value("FirstName").toString(),
-            query.value("LastName").toString(),
-            query.value("UserName").toString(),
-            query.value("AddDateTime").toDateTime());
-
             const auto role = ::User::intToEUserRole(query.value("Role").toUInt());
             if (role == ::User::EUserRole::UNDEFINED)
             {
-                throw LoadException(QString("User role cannot be UNDEFINE in [Users]/TelegramID. Record: %1").arg(recordId));
+                throw LoadException(QString("User role cannot be UNDEFINE in [Users]/Role. Record: %1").arg(recordId));
             }
-            tmp.setRole(role);
 
-            _users.emplace(std::move(userId), std::move(tmp));
+            const auto state = ::User::intToEUserState(query.value("State").toUInt());
+            if (role == ::User::EUserRole::UNDEFINED)
+            {
+                throw LoadException(QString("User state cannot be UNDEFINE in [Users]/State. Record: %1").arg(recordId));
+            }
+
+
+            auto user_p=
+                std::make_unique<User>(userId,
+                                       query.value("FirstName").toString(),
+                                       query.value("LastName").toString(),
+                                       query.value("UserName").toString(),
+                                       role,
+                                       state);
+
+            userIdList.push_back(QString::number(userId));
+
+            QObject::connect(user_p.get(), SIGNAL(roleChenged(qint32, User::EUserRole)), SLOT(roleChenged(qint32, User::EUserRole)));
+            QObject::connect(user_p.get(), SIGNAL(stateChenged(qint32, User::EUserState)), SLOT(stateChenged(qint32, User::EUserState)));
+            QObject::connect(user_p.get(), SIGNAL(addNewChat(qint32, qint32, Chat::EChatState)), SLOT(addNewChat(qint32, qint32, Chat::EChatState)));
+            QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint32, qint32, Chat::EChatState)), SLOT(chatStateChenged(qint32, qint32, Chat::EChatState)));
+
+            _users.emplace(std::move(userId), std::move(user_p));
+        }
+
+        //Пользовтелей совсем нет, больше нечего загружать....
+        if (userIdList.isEmpty())
+        {
+            return;
+        }
+
+        query.clear();
+
+        queryText =
+            QString("SELECT `ID`, `UserID`, `ChatID`, `State` "
+                    "FROM `Chats` "
+                    "WHERE `UserID` In (%1)")
+                .arg(userIdList.join(u','));
+
+        DBQueryExecute(_db, query, queryText);
+
+        while (query.next())
+        {
+            const auto recordId = query.value("ID").toLongLong();
+            const qint32 userId = query.value("UserID").toInt();
+            if (userId <= 0)
+            {
+                throw LoadException(QString("User ID cannot be null or less in [Chats]/UserID. Record: %1").arg(recordId));
+            }
+
+            const qint32 chatId = query.value("ChatID").toInt();
+            if (chatId <= 0)
+            {
+                throw LoadException(QString("Chat ID cannot be null or less in [Chats]/ChatID. Record: %1").arg(recordId));
+            }
+            const auto state = Chat::intToEChatState(query.value("State").toUInt());
+            if (state == Chat::EChatState::UNDEFINED)
+            {
+                throw LoadException(QString("User state cannot be UNDEFINE in [Chats]/State. Record: %1").arg(recordId));
+            }
+
+            auto chat_p = std::make_unique<Chat>(chatId, state);
+            auto& user = _users.find(userId)->second;
+            user->addExistChat(std::move(chat_p));
         }
 
         commitDB(_db);
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -223,101 +166,244 @@ void Users::loadFromDB()
     }
 }
 
-void Users::addUser(const ::User &user)
+void Users::addUser(std::unique_ptr<::User> user_p)
 {
-    Q_ASSERT(user.role() != ::User::EUserRole::UNDEFINED);
+    Q_CHECK_PTR(user_p);
 
-    const auto users_it = _users.find(user.telegramID());
-    if  (users_it != _users.end())
-    {
-        return;
-        //setUserRole(users_it->first, User::EUserRole::NO_CONFIRMED);
-    }
+    Q_ASSERT(user_p->telegramID() != 0);
+    Q_ASSERT(user_p->role() != ::User::EUserRole::UNDEFINED);
+    Q_ASSERT(user_p->state() != ::User::EUserState::UNDEFINED);
+    Q_ASSERT(!_users.contains(user_p->telegramID()));
 
-    const auto queryText =
-        QString("INSERT INTO `Users` (`TelegramID`, `FirstName`, `LastName`, `UserName`, `AddDateTime`, `Role`) "
-                "VALUES (%1, '%2', '%3', '%4', CAST('%5' AS DATETIME)), %6 ")
-                               .arg(user.telegramID())
-                               .arg(user.firstName())
-                               .arg(user.lastName())
-                               .arg(user.userName())
-                               .arg(user.addDateTime().toString(DATETIME_FORMAT))
-                               .arg(static_cast<quint8>(user.role()));
+    auto userId = user_p->telegramID();
 
     try
     {
-        DBQueryExecute(_db, queryText);
+        transactionDB(_db);
+
+        QSqlQuery query(_db);
+
+        auto queryText =
+        QString("INSERT INTO `Users` (`TelegramID`, `FirstName`, `LastName`, `UserName`, `Role`, `State`) "
+                "VALUES (%1, '%2', '%3', '%4', %5, %6)")
+                               .arg(userId)
+                               .arg(user_p->firstName())
+                               .arg(user_p->lastName())
+                               .arg(user_p->userName())
+                               .arg(static_cast<quint8>(user_p->role()))
+                               .arg(static_cast<quint8>(user_p->state()));
+
+
+        DBQueryExecute(_db, query, queryText);
+
+        for (const auto chatId: user_p->chatIdList())
+        {
+            const auto& chat = user_p->chat(chatId);
+
+            queryText =
+                QString("INSERT INTO `Chats` (`UserID`, `ChatId`, `State`) "
+                        "VALUES (%1, %2, %3)")
+                    .arg(userId)
+                    .arg(chat.chatId())
+                    .arg(static_cast<quint8>(chat.state()));
+
+            DBQueryExecute(_db, query, queryText);
+        }
+
+        commitDB(_db);
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
 
-    _users.insert({user.telegramID(), user});
+    QObject::connect(user_p.get(), SIGNAL(roleChenged(qint32, User::EUserRole)), SLOT(roleChenged(qint32, User::EUserRole)));
+    QObject::connect(user_p.get(), SIGNAL(stateChenged(qint32, User::EUserState)), SLOT(stateChenged(qint32, User::EUserState)));
+    QObject::connect(user_p.get(), SIGNAL(addNewChat(qint32, qint32, Chat::EChatState)), SLOT(addNewChat(qint32, qint32, Chat::EChatState)));
+    QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint32, qint32, Chat::EChatState)), SLOT(chatStateChenged(qint32, qint32, Chat::EChatState)));
+
+    _users.emplace(std::move(userId), std::move(user_p));
 }
 
-bool Users::removeUser(qint32 id)
+void Users::removeUser(qint32 userId)
 {
-    Q_ASSERT(_users.contains(id));
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(_users.contains(userId));
 
-    setUserRole(id, ::User::EUserRole::DELETED);
+    const auto& user = _users.find(userId)->second;
 
-    return true;
+    user->setRole(::User::EUserRole::DELETED);
 }
 
-void Users::setUserRole(qint32 id, User::EUserRole role)
+Users::UsersIDList Users::userIdList() const
 {
-    Q_ASSERT(role != ::User::EUserRole::UNDEFINED);
+    UsersIDList results;
 
-    const auto users_it = _users.find(id);
-    if  (users_it == _users.end())
+    for (const auto& user: _users)
     {
-        Q_ASSERT(false);
+        results.insert(user.first);
     }
 
-    const auto queryText =
-        QString("UPDATE `Users` "
-                "SET `Role` = %1 ")
-            .arg(static_cast<quint8>(role));
+    return results;
+}
 
-    try
+Users::UsersIDList Users::noConfirmUserIdList() const
+{
+    UsersIDList results;
+
+    for (const auto& user: _users)
     {
-        DBQueryExecute(_db, queryText);
+        if (user.second->role() == User::EUserRole::NO_CONFIRMED)
+        {
+            results.insert(user.first);
+        }
     }
-    catch (const SQLException& err)
+
+    return results;
+}
+
+Users::UsersIDList Users::confirmUserIdList() const
+{
+    UsersIDList results;
+
+    for (const auto& user: _users)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
-
-        return;
+        const auto role = user.second->role();
+        if (role == User::EUserRole::USER || role == User::EUserRole::ADMIN)
+        {
+            results.insert(user.first);
+        }
     }
 
-    users_it->second.setRole(role);
+    return results;
 }
 
-User::EUserRole Users::userRole(qint32 id) const
+User &Users::user(qint32 userId) const
 {
-    Q_ASSERT(_users.contains(id));
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(_users.contains(userId));
 
-    return _users.at(id).role();
+    return *_users.at(userId).get();
 }
 
-User &Users::getUser(qint32 id)
+const User& Users::user_c(qint32 userId) const
 {
-    Q_ASSERT(_users.contains(id));
-
-    return _users.at(id);
+    return user(userId);
 }
 
-bool Users::userExist(qint32 id) const
+bool Users::userExist(qint32 userId) const
 {
-    return _users.contains(id);
+    Q_ASSERT(userId != 0);
+
+    return _users.contains(userId);
 }
 
 quint64 Users::usersCount() const
 {
     return _users.size();
+}
+
+void Users::roleChenged(qint32 userId, User::EUserRole role)
+{
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(role != ::User::EUserRole::UNDEFINED);
+    Q_ASSERT(_users.contains(userId));
+
+    const auto queryText = QString("UPDATE `Users` "
+                                   "SET `Role` = %1 "
+                                   "WHERE `TelegramID` = %2")
+                              .arg(static_cast<quint8>(role))
+                              .arg(userId);
+
+    try
+    {
+        DBQueryExecute(_db, queryText);
+    }
+    catch (const SQLException& err)
+    {
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+
+        return;
+    }
+}
+
+void Users::stateChenged(qint32 userId, User::EUserState state)
+{
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(state != ::User::EUserState::UNDEFINED);
+    Q_ASSERT(_users.contains(userId));
+
+    const auto queryText = QString("UPDATE `Users` "
+                                   "SET `State` = %1 "
+                                   "WHERE `TelegramID` = %2")
+                               .arg(static_cast<quint8>(state))
+                               .arg(userId);
+
+    try
+    {
+        DBQueryExecute(_db, queryText);
+    }
+    catch (const SQLException& err)
+    {
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+
+        return;
+    }
+}
+
+void Users::addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state)
+{
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(chatId != 0);
+    Q_ASSERT(_users.contains(userId));
+    Q_ASSERT(_users.at(userId).get()->chatExist(chatId));
+
+    const auto queryText =
+        QString("INSERT INTO `Chats` (`UserID`, `ChatId`, `State`) "
+                "VALUES (%1, %2, %3)")
+            .arg(userId)
+            .arg(chatId)
+            .arg(static_cast<quint8>(state));
+
+    try
+    {
+        DBQueryExecute(_db, queryText);
+    }
+    catch (const SQLException& err)
+    {
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+
+        return;
+    }
+}
+
+void Users::chatStateChenged(qint32 userId, qint32 chatId, Chat::EChatState state)
+{
+    Q_ASSERT(userId != 0);
+    Q_ASSERT(chatId != 0);
+    Q_ASSERT(state != Chat::EChatState::UNDEFINED);
+    Q_ASSERT(_users.contains(userId));
+    Q_ASSERT(_users.at(userId)->chatExist(chatId));
+
+    const auto queryText = QString("UPDATE `Chats` "
+                                   "SET `State` = %1 "
+                                   "WHERE `UserID` = %2 AND `ChatID` = %3")
+                               .arg(static_cast<quint8>(state))
+                               .arg(userId)
+                               .arg(chatId);
+
+    try
+    {
+        DBQueryExecute(_db, queryText);
+    }
+    catch (const SQLException& err)
+    {
+        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+
+        return;
+    }
 }
 
 

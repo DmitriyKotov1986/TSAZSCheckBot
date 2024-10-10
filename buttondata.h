@@ -15,6 +15,10 @@ public:
     void fromString(const QString& paramStr);
     QString toString() const;
 
+    bool isExist(const QString& paramName) const;
+    bool isEmpty() const;
+    qsizetype count() const;
+
 private:
     QHash<QString, QString> _params;
 

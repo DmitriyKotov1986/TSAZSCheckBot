@@ -5,11 +5,12 @@
 
 //Qt
 #include <QString>
+#include <QVariant>
 
 class Question
 {
 public:
-    using CheckAnswersList = std::map<qint32, QString>;
+    using AnswersList = std::map<qint32, QVariant>;
 
     enum class EQuestionType: quint8
     {
@@ -25,8 +26,7 @@ public:
     {
         UNDEFINED = 0,
         DELETED = 1,
-        CHECHED = 2,
-        DEFAULT_TEXT = 3
+        CHECHED = 2
     };
 
     static EAnswerType intToEAnswerType(quint8 type);
@@ -38,16 +38,14 @@ public:
     const QString& text() const;
     EQuestionType type() const;
 
-    void addAnswer(qint32 index, const QString& text);
-    const CheckAnswersList& getAnswersList() const;
-
-private:
-
+    void addAnswer(qint32 index, const QVariant& data);
+    const AnswersList& getAnswersList() const;
+    const QVariant& getAnswer(qint32 index);
 
 private:
     const quint32 _index = 0;
     const QString _text;
     EQuestionType _type = EQuestionType::UNDEFINED;
 
-    CheckAnswersList _answers;
+    AnswersList _answers;
 };

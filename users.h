@@ -2,6 +2,8 @@
 
 //STL
 #include <unordered_map>
+#include <unordered_set>
+#include <memory>
 
 //Qt
 #include <QObject>
@@ -12,77 +14,7 @@
 //My
 #include <Common/common.h>
 
-#include "questionnaire.h"
-
-class Users;
-
-class User final
-{
-    friend Users;
-
-public:
-    /*!
-        Роли пользователей
-    */
-    enum class EUserRole: quint8
-    {
-        UNDEFINED = 0,  ///< не определено
-        NO_CONFIRMED = 1,///< пользователь зарегистрировался иждет подтверждения админа
-        USER = 2, ///< пользовтель - обычный пользователь и может только заполнять анкеты
-        ADMIN = 3, ///< пользователь - админ
-        DELETED = 4   ///< пользователь удален или заблокирован
-    };
-
-
-
-    static  EUserRole intToEUserRole(quint8 role);
-
-public:
-    User(qint64 telegramID, const QString& firstName, const QString lastName, const QString userName, const QDateTime& addDateTime = QDateTime::currentDateTime());
-    ~User();
-
-    qint64 telegramID() const { return  _telegramID; }
-    const QString& firstName() const { return _firstName; }
-    const QString& lastName() const { return _lastName; }
-    const QString& userName() const { return _userName; }
-    const QDateTime& addDateTime() const { return _addDateTime; }
-
-
-    EUserRole role() const;
-
-    const QUuid& currentQUuid() const { return _currentUUID; };
-
-    qint32 startQuestionnaire(Questionnaire* questionnaire);
-    qint32 setAnswer(qint32 questionID, qint32 answerID);
-    qint32 nextQuestionId();
-    qint32 prevQuestionId();
-    void finishQuestionnaire();
-    void cancelQuestionnaire();
-    qint32 maxQuestionId() const { return _maxQuestionId; };
-
-private:
-    void clear();
-    void setRole(EUserRole role);
-
-private:
-    using QuestionsIterator = Questionnaire::Questions::const_iterator;
-
-private:
-    const qint64 _telegramID = 0;
-    const QString _firstName;
-    const QString _lastName;
-    const QString _userName;
-    const QDateTime _addDateTime = QDateTime::currentDateTime();
-    EUserRole _role = EUserRole::UNDEFINED;
-
-    Questionnaire* _questionnaire = nullptr;
-    QUuid _currentUUID;
-    Questionnaire::Questions _questions;
-    QuestionsIterator _currentQuestions;
-    QDateTime _startDateTime = QDateTime::currentDateTime();
-    qint32 _maxQuestionId = -1;
-
-};
+#include "user.h"
 
 class Users final
     : public QObject
@@ -90,25 +22,36 @@ class Users final
     Q_OBJECT
 
 public:
+    using UsersIDList = std::unordered_set<qint32>;
+
+public:
     explicit Users(const Common::DBConnectionInfo& dbConnectionInfo, QObject* parent = nullptr);
     ~Users();
 
     void loadFromDB();
 
-    void addUser(const ::User& user);
-    bool removeUser(qint32 id);
+    void addUser(std::unique_ptr<::User> user_p);
+    void removeUser(qint32 userId);
 
-    User::EUserRole userRole(qint32 id) const;
-    void setUserRole(qint32 id, User::EUserRole role);
+    UsersIDList userIdList() const;
+    UsersIDList noConfirmUserIdList() const;
+    UsersIDList confirmUserIdList() const;
 
-    User& getUser(qint32 id);
+    ::User& user(qint32 userId) const;
+    const ::User& user_c(qint32 userId) const;
 
-    bool userExist(qint32 id) const;
+    bool userExist(qint32 userId) const;
 
     quint64 usersCount() const;
 
 signals:
     void errorOccured(Common::EXIT_CODE errorCode, const QString &errorString);
+
+private slots:
+    void roleChenged(qint32 userId, User::EUserRole role);
+    void stateChenged(qint32 userId, User::EUserState state);
+    void addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state);
+    void chatStateChenged(qint32 userId, qint32 chatId, Chat::EChatState state);
 
 private:
     Users() = delete;
@@ -119,7 +62,7 @@ private:
 
     QSqlDatabase _db;
 
-    std::unordered_map<qint32, ::User> _users;
+    std::unordered_map<qint32, std::unique_ptr<::User>> _users;
 
 };
 

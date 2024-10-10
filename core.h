@@ -17,6 +17,7 @@
 #include "tconfig.h"
 #include "users.h"
 #include "questionnaire.h"
+#include "filedownloader.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Класс ядра
@@ -52,25 +53,53 @@ private slots:
     void callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery callback_query);
     void updateDataFromServer();
 
+    void downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteArray& data);
+    void downloadErrorDownloader(qint32 chatId, qint32 userId);
+    void sendLogMsgDownloader(Common::TDBLoger::MSG_CODE category, const QString& msg);
+
+private:
+    enum class UserEditAction: quint8
+    {
+        UNBLOCK = 0,
+        BLOCK = 1
+    };
+
+private:
+    static quint64 UUIDtoInt(const QUuid& uuid);
+
 private:
     Q_DISABLE_COPY_MOVE(Core)
 
     void initUser(qint32 chatId, const Telegram::Message& message);
     void removeUser(qint32 chatId, qint32 userId);
 
+    void rebootUsers(const QString& userMessage);
+
     void startQuestionnaire(qint32 chatId, qint32 userId);
     void finishQuestionnaire(qint32 chatId, qint32 userId);
-    void cancelQuestionnaire(qint32 chatId, qint32 userId);
-    void resultQuestionnaire(qint32 chatId, qint32 userId);
+    void resultQuestionnaire(qint32 chatId, qint32 userId, const QDateTime& start, const QDateTime& end);
     void loadQuestionnaire(qint32 chatId, qint32 userId);
     void saveQuestionnaire(qint32 chatId, qint32 userId);
+    void nextQuestions(qint32 chatId, qint32 userId, qint32 questionId);
+    void saveAnswer(qint32 chatId, qint32 userId, qint32 questionId, const QVariant& answer);
+
+    void startUsersEdit(qint32 chatId, qint32 userId);
+    void usersSelectList(qint32 chatId, qint32 userId, UserEditAction action);
+    void userConfirm(qint32 chatId, qint32 userId, qint32 userWorkId);
+    void userBlock(qint32 chatId, qint32 userId, qint32 userWorkId);
+
+    void selectDate(qint32 chatId, qint32 userId);
+
+    void cancel(qint32 chatId, qint32 userId);
+
+    void setUserState(qint32 chatId, qint32 userId, ::User::EUserState state);
 
     void startButton(qint32 chatId, ::User::EUserRole role);
     void startUserButton(qint32 chatId);
     void startAdminButton(qint32 chatId);
-    void nextQuestions(qint32 chatId, qint32 userId, qint32 questionId);
-
-    quint64 UUIDtoInt(const QUuid& uuid);
+    void startQuestionnaireButton(qint32 chatId);
+    void clearButton(qint32 chatId);
+    void cancelButton(qint32 chatId);
 
 private:
     TConfig* _cnf = nullptr;            ///< Глобальная конфигурация
@@ -86,5 +115,7 @@ private:
 
     Users* _users = nullptr; 
     Questionnaire* _questionnaire = nullptr;
+
+    FileDownloader* _fileDownloader = nullptr;
 
 }; // class Core
