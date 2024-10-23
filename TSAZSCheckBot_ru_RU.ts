@@ -4,44 +4,44 @@
 <context>
     <name>Core</name>
     <message>
-        <location filename="core.cpp" line="224"/>
+        <location filename="core.cpp" line="292"/>
         <source>Support only text command</source>
         <translation>Поддерживаются только текстовые команды</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="283"/>
-        <location filename="core.cpp" line="1150"/>
-        <location filename="core.cpp" line="1162"/>
+        <location filename="core.cpp" line="354"/>
+        <location filename="core.cpp" line="1267"/>
+        <location filename="core.cpp" line="1279"/>
         <source>Start</source>
         <translation>Начать</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="236"/>
-        <location filename="core.cpp" line="289"/>
-        <location filename="core.cpp" line="1183"/>
+        <location filename="core.cpp" line="304"/>
+        <location filename="core.cpp" line="360"/>
+        <location filename="core.cpp" line="1300"/>
         <source>Finish</source>
         <translation>Завершить</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="112"/>
+        <location filename="core.cpp" line="178"/>
         <source>The server has been rebooted by the administrator. Please start over</source>
         <translation>Сервер был перезагружен администратором. Пожалуйста начните заново</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="206"/>
+        <location filename="core.cpp" line="273"/>
         <source>Cannot load file from server. Try again</source>
         <translation>Неудалось загрузить файл с сервера. Попробуйте еще раз</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="236"/>
-        <location filename="core.cpp" line="295"/>
-        <location filename="core.cpp" line="1184"/>
-        <location filename="core.cpp" line="1204"/>
+        <location filename="core.cpp" line="304"/>
+        <location filename="core.cpp" line="366"/>
+        <location filename="core.cpp" line="1301"/>
+        <location filename="core.cpp" line="1321"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="253"/>
+        <location filename="core.cpp" line="322"/>
         <source>Support commands:
 /start - start bot
 /stop - stop bot
@@ -52,179 +52,179 @@
 /help - справка</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="261"/>
+        <location filename="core.cpp" line="331"/>
         <source>Unknow command. Please send the /start command to start and send message to Administrator</source>
         <translation>Неизвестная команда. Пожалуйста отправте команду /start для начала работы и свяжитесь с Администратором для поверждения вашей регистрации</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="278"/>
+        <location filename="core.cpp" line="349"/>
         <source>Authorization has not been completed. Try letter</source>
         <translation>Авторизация не завершена. Попробуйте позже</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="305"/>
-        <location filename="core.cpp" line="833"/>
-        <location filename="core.cpp" line="991"/>
+        <location filename="core.cpp" line="377"/>
+        <location filename="core.cpp" line="928"/>
+        <location filename="core.cpp" line="1108"/>
         <source>Insufficient rights to perform the action</source>
         <translation>Недостаточно прав для выполнения действия</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="310"/>
-        <location filename="core.cpp" line="1166"/>
+        <location filename="core.cpp" line="382"/>
+        <location filename="core.cpp" line="1283"/>
         <source>Results</source>
         <translation>Результаты</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="314"/>
-        <location filename="core.cpp" line="1163"/>
+        <location filename="core.cpp" line="386"/>
+        <location filename="core.cpp" line="1280"/>
         <source>Users</source>
         <translation>Пользователи</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="318"/>
-        <location filename="core.cpp" line="1165"/>
+        <location filename="core.cpp" line="390"/>
+        <location filename="core.cpp" line="1282"/>
         <source>Load</source>
         <translation>Загрузить</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="322"/>
-        <location filename="core.cpp" line="1164"/>
+        <location filename="core.cpp" line="394"/>
+        <location filename="core.cpp" line="1281"/>
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="328"/>
+        <location filename="core.cpp" line="401"/>
         <source>Unsupport command</source>
         <translation>Неподдерживаемая команда</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="362"/>
+        <location filename="core.cpp" line="438"/>
         <source>This button is not active. Please click &apos;Start&apos; on start menu for start questionnaire</source>
         <translation>Кнопка не активна. Пожалуйста нажмите &apos;Старт&apos; в начальном меню для начала опроса</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="372"/>
-        <location filename="core.cpp" line="713"/>
+        <location filename="core.cpp" line="449"/>
+        <location filename="core.cpp" line="804"/>
         <source>Questionnaire is not started. Retry</source>
         <translation>Опрос не начат. Попробуйте еще раз</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="386"/>
+        <location filename="core.cpp" line="464"/>
         <source>Questionnaire for this button already finished</source>
         <translation>Нажатая кнопка относится к уже завершенному опросу</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="797"/>
+        <location filename="core.cpp" line="891"/>
         <source>Please send file contain new questionnire</source>
         <translation>Пожауйста отправте файл содержащий новый опрос</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="847"/>
+        <location filename="core.cpp" line="942"/>
         <source>Unblock</source>
         <translation>Разблокировать</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="857"/>
+        <location filename="core.cpp" line="952"/>
         <source>Block</source>
         <translation>Заблокировать</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="867"/>
+        <location filename="core.cpp" line="962"/>
         <source>Please click to &apos;Unblock&apos; for confirmed user registration or &apos;Block&apos; for user blocked and delete</source>
         <translation>Пожалуйста нажмите на &apos;Разблокировать&apos; для подтверждения регистрации пользователя или  &apos;Заблокировать&apos; для блокировки пользователя и его удаления</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="925"/>
+        <location filename="core.cpp" line="1036"/>
         <source>No user for edit</source>
         <translation>Нет пользователей для редактирования</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="934"/>
+        <location filename="core.cpp" line="1045"/>
         <source>Please select user</source>
         <translation>Пожалуйста выберите пользователя</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="949"/>
+        <location filename="core.cpp" line="1061"/>
         <source>Congratulations! Administrator has added you to the list of confirmed users</source>
         <translation>Поздравляем! Администратор добавил вас в список подтвержденных пользователей</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="953"/>
+        <location filename="core.cpp" line="1067"/>
         <source>User %1 successfully confirmed</source>
         <translation>Пользователь %1 успешно разблокирован</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="970"/>
+        <location filename="core.cpp" line="1085"/>
         <source>Administrator has deleted you from the list of confirmed users. Please send the /start command to start and send message to Administrator</source>
         <translation>Администратор удалил Вас из списка подтвержденных пользователей. Пожалуйста отправьте команду /start чтобы снова начать работать с ботом и связитесь с Администратором</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="976"/>
+        <location filename="core.cpp" line="1092"/>
         <source>User %1 successfully deleted</source>
         <translation>Пользователь %1 успешно заблокирован</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1006"/>
+        <location filename="core.cpp" line="1123"/>
         <source>One day</source>
         <translation>1 день</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1017"/>
+        <location filename="core.cpp" line="1134"/>
         <source>One week</source>
         <translation>1 неделя</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1031"/>
+        <location filename="core.cpp" line="1148"/>
         <source>Two weeks</source>
         <translation>2 недели</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1042"/>
+        <location filename="core.cpp" line="1159"/>
         <source>Three weeks</source>
         <translation>3 недели</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1056"/>
+        <location filename="core.cpp" line="1173"/>
         <source>One months</source>
         <translation>1 месяц</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1067"/>
+        <location filename="core.cpp" line="1184"/>
         <source>Two months</source>
         <translation>2 месяца</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1081"/>
+        <location filename="core.cpp" line="1198"/>
         <source>Three months</source>
         <translation>3 месяца</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1092"/>
+        <location filename="core.cpp" line="1209"/>
         <source>Four months</source>
         <translation>4 месяца</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1106"/>
+        <location filename="core.cpp" line="1223"/>
         <source>Half year</source>
         <translation>Полгода</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1117"/>
+        <location filename="core.cpp" line="1234"/>
         <source>One year</source>
         <translation>1 год</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1126"/>
+        <location filename="core.cpp" line="1243"/>
         <source>Please select period for report of results</source>
         <translation>Пожалуйста выберите период составляения отчета</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1156"/>
+        <location filename="core.cpp" line="1273"/>
         <source>Please click &apos;Start&apos; button for new check AZS</source>
         <translation>Пожалуйста нажмите &apos;Начать&apos; для проверки новой АЗС</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1173"/>
+        <location filename="core.cpp" line="1290"/>
         <source>Please click:
 &apos;Start&apos; button for new check AZS
 &apos;Users&apos; for edit users data
@@ -239,7 +239,7 @@
         &apos;Результаты&apos; для сохранения результатов уже завершенных опросов</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1198"/>
+        <location filename="core.cpp" line="1315"/>
         <source>Goodbye</source>
         <translation>До свидания...</translation>
     </message>
@@ -248,85 +248,85 @@
         <translation type="vanished">Авторизация еще не завершена. Пожалуйста отправьте сообщение администратору</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1210"/>
+        <location filename="core.cpp" line="1327"/>
         <source>Please click &apos;Cancel&apos; for cancel</source>
         <translation>Пожалуйста нажмите &apos;Отмена&apos; для прерывания текущего действия</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1256"/>
-        <location filename="core.cpp" line="1264"/>
+        <location filename="core.cpp" line="1373"/>
+        <location filename="core.cpp" line="1381"/>
         <source>(%1/%2) %3</source>
         <translation>(%1/%2) %3</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1290"/>
+        <location filename="core.cpp" line="1408"/>
         <source>Congratulations! You have answered all the questions</source>
         <translation>Поздравляем! Вы ответили на все вопросы</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="1191"/>
+        <location filename="core.cpp" line="1308"/>
         <source>Please click &apos;Finish&apos; button finished and save result or &apos;Cancel&apos; to cancel</source>
         <translation>Пожалуйста нажмите &apos;Завершить&apos; для сохранения результатов или &apos;Отмена&apos; для отмены</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="724"/>
+        <location filename="core.cpp" line="816"/>
         <source>Questionnaire finished. Results saved as: %1</source>
         <translation>Опрос завершен. Результаты сохранены как: %1</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="406"/>
+        <location filename="core.cpp" line="485"/>
         <source>This button is not active. Please click &apos;Users&apos; on start menu for edit users</source>
         <translation>Кнопка неактивна. Пожалуйств нажмите &apos;Пользователи&apos; в начальном меню для редактирования пользователей</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="453"/>
+        <location filename="core.cpp" line="533"/>
         <source>This button is not active. Please click &apos;Results&apos; on start menu for save results</source>
         <translation>Кнопка неактивна. Пожалуйста нажмите &apos;Результаты&apos; в начальном меню для сохранения результатов уже завершенных опросов</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="495"/>
-        <location filename="core.cpp" line="516"/>
-        <location filename="core.cpp" line="550"/>
+        <location filename="core.cpp" line="576"/>
+        <location filename="core.cpp" line="598"/>
+        <location filename="core.cpp" line="635"/>
         <source>Cannot load new questionnaire from server. Try again</source>
         <translation>Не удалось загрузить новый опрос с сервера. Попробуйте снова</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="532"/>
+        <location filename="core.cpp" line="615"/>
         <source>Cannot load new questionnaire: %1</source>
         <translation>Не удалось загрузить новый опрос: %1</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="539"/>
+        <location filename="core.cpp" line="623"/>
         <source>New questionnaire load successfully</source>
         <translation>Новый опрос успешно загружен</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="541"/>
+        <location filename="core.cpp" line="625"/>
         <source>The questionnaire has been reloaded by the administrator. Please start over</source>
         <translation>Администратор загрузил новый опрос. Пожалуйста начните заново</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="574"/>
+        <location filename="core.cpp" line="660"/>
         <source>Please wait for account confirmation from the administrator</source>
         <translation>Пожалуйста дождитесь подтвержения своего аккаунта Администратором</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="577"/>
+        <location filename="core.cpp" line="664"/>
         <source>Please wait for account unblocked from the administrator</source>
         <translation>Пожалуйста дождитесь пока Администратор разблокинует Ваш аккаунт</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="610"/>
+        <location filename="core.cpp" line="698"/>
         <source>Welcome to TS AZS Check Bot. Please wait for account confirmation from the administrator</source>
         <translation>Добро пожаловать в TS AZS Check Bot. Пожалуйста дождитесь пока Администратор подтвердит Ваш аккаунт</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="651"/>
+        <location filename="core.cpp" line="741"/>
         <source>Authorization has not been completed. Please enter the /start command to start and send message to Administrator</source>
         <translation>Авторизация еще не завершена. Пожалуйста отправте команда /start для начала работы и свяжитесь с Администратором для поверждения вашей регистрации</translation>
     </message>
     <message>
-        <location filename="core.cpp" line="739"/>
+        <location filename="core.cpp" line="832"/>
         <source>Questionnaire has been canceled</source>
         <translation>Опрос был отменен</translation>
     </message>
@@ -504,32 +504,32 @@
         <translation>Не удалось сохранить опрос в БД</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>Questionnare UUID</source>
         <translation>UUID опроса</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>User name</source>
         <translation>Имя пользователя</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>Start questionnare</source>
         <translation>Начало опроса</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>Finish questionnare</source>
         <translation>Конец опроса</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>Question</source>
         <translation>Вопрос</translation>
     </message>
     <message>
-        <location filename="questionnaire.cpp" line="600"/>
+        <location filename="questionnaire.cpp" line="602"/>
         <source>Answer</source>
         <translation>Ответ</translation>
     </message>

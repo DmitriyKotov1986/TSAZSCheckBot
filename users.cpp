@@ -70,7 +70,7 @@ void Users::loadFromDB()
         while (query.next())
         {
             const auto recordId = query.value("ID").toLongLong();
-            const qint32 userId = query.value("TelegramID").toInt();
+            const qint64 userId = query.value("TelegramID").toLongLong();
             if (userId <= 0)
             {
                 throw LoadException(QString("User ID cannot be null or less in [Users]/TelegramID. Record: %1").arg(recordId));
@@ -88,7 +88,6 @@ void Users::loadFromDB()
                 throw LoadException(QString("User state cannot be UNDEFINE in [Users]/State. Record: %1").arg(recordId));
             }
 
-
             auto user_p=
                 std::make_unique<User>(userId,
                                        query.value("FirstName").toString(),
@@ -99,10 +98,10 @@ void Users::loadFromDB()
 
             userIdList.push_back(QString::number(userId));
 
-            QObject::connect(user_p.get(), SIGNAL(roleChenged(qint32, User::EUserRole)), SLOT(roleChenged(qint32, User::EUserRole)));
-            QObject::connect(user_p.get(), SIGNAL(stateChenged(qint32, User::EUserState)), SLOT(stateChenged(qint32, User::EUserState)));
-            QObject::connect(user_p.get(), SIGNAL(addNewChat(qint32, qint32, Chat::EChatState)), SLOT(addNewChat(qint32, qint32, Chat::EChatState)));
-            QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint32, qint32, Chat::EChatState)), SLOT(chatStateChenged(qint32, qint32, Chat::EChatState)));
+            QObject::connect(user_p.get(), SIGNAL(roleChenged(qint64, User::EUserRole)), SLOT(roleChenged(qint64, User::EUserRole)));
+            QObject::connect(user_p.get(), SIGNAL(stateChenged(qint64, User::EUserState)), SLOT(stateChenged(qint64, User::EUserState)));
+            QObject::connect(user_p.get(), SIGNAL(addNewChat(qint64, qint64, Chat::EChatState)), SLOT(addNewChat(qint64, qint64, Chat::EChatState)));
+            QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint64, qint64, Chat::EChatState)), SLOT(chatStateChenged(qint64, qint64, Chat::EChatState)));
 
             _users.emplace(std::move(userId), std::move(user_p));
         }
@@ -126,13 +125,13 @@ void Users::loadFromDB()
         while (query.next())
         {
             const auto recordId = query.value("ID").toLongLong();
-            const qint32 userId = query.value("UserID").toInt();
+            const qint64 userId = query.value("UserID").toLongLong();
             if (userId <= 0)
             {
                 throw LoadException(QString("User ID cannot be null or less in [Chats]/UserID. Record: %1").arg(recordId));
             }
 
-            const qint32 chatId = query.value("ChatID").toInt();
+            const qint64 chatId = query.value("ChatID").toLongLong();
             if (chatId <= 0)
             {
                 throw LoadException(QString("Chat ID cannot be null or less in [Chats]/ChatID. Record: %1").arg(recordId));
@@ -219,15 +218,15 @@ void Users::addUser(std::unique_ptr<::User> user_p)
         return;
     }
 
-    QObject::connect(user_p.get(), SIGNAL(roleChenged(qint32, User::EUserRole)), SLOT(roleChenged(qint32, User::EUserRole)));
-    QObject::connect(user_p.get(), SIGNAL(stateChenged(qint32, User::EUserState)), SLOT(stateChenged(qint32, User::EUserState)));
-    QObject::connect(user_p.get(), SIGNAL(addNewChat(qint32, qint32, Chat::EChatState)), SLOT(addNewChat(qint32, qint32, Chat::EChatState)));
-    QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint32, qint32, Chat::EChatState)), SLOT(chatStateChenged(qint32, qint32, Chat::EChatState)));
+    QObject::connect(user_p.get(), SIGNAL(roleChenged(qint64, User::EUserRole)), SLOT(roleChenged(qint64, User::EUserRole)));
+    QObject::connect(user_p.get(), SIGNAL(stateChenged(qint64, User::EUserState)), SLOT(stateChenged(qint64, User::EUserState)));
+    QObject::connect(user_p.get(), SIGNAL(addNewChat(qint64, qint64, Chat::EChatState)), SLOT(addNewChat(qint64, qint64, Chat::EChatState)));
+    QObject::connect(user_p.get(), SIGNAL(chatStateChenged(qint64, qint64, Chat::EChatState)), SLOT(chatStateChenged(qint64, qint64, Chat::EChatState)));
 
     _users.emplace(std::move(userId), std::move(user_p));
 }
 
-void Users::removeUser(qint32 userId)
+void Users::removeUser(qint64 userId)
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(_users.contains(userId));
@@ -280,7 +279,7 @@ Users::UsersIDList Users::confirmUserIdList() const
     return results;
 }
 
-User &Users::user(qint32 userId) const
+User &Users::user(qint64 userId) const
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(_users.contains(userId));
@@ -288,12 +287,12 @@ User &Users::user(qint32 userId) const
     return *_users.at(userId).get();
 }
 
-const User& Users::user_c(qint32 userId) const
+const User& Users::user_c(qint64 userId) const
 {
     return user(userId);
 }
 
-bool Users::userExist(qint32 userId) const
+bool Users::userExist(qint64 userId) const
 {
     Q_ASSERT(userId != 0);
 
@@ -305,7 +304,7 @@ quint64 Users::usersCount() const
     return _users.size();
 }
 
-void Users::roleChenged(qint32 userId, User::EUserRole role)
+void Users::roleChenged(qint64 userId, User::EUserRole role)
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(role != ::User::EUserRole::UNDEFINED);
@@ -329,7 +328,7 @@ void Users::roleChenged(qint32 userId, User::EUserRole role)
     }
 }
 
-void Users::stateChenged(qint32 userId, User::EUserState state)
+void Users::stateChenged(qint64 userId, User::EUserState state)
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(state != ::User::EUserState::UNDEFINED);
@@ -353,7 +352,7 @@ void Users::stateChenged(qint32 userId, User::EUserState state)
     }
 }
 
-void Users::addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state)
+void Users::addNewChat(qint64 userId, qint64 chatId, Chat::EChatState state)
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(chatId != 0);
@@ -379,7 +378,7 @@ void Users::addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state)
     }
 }
 
-void Users::chatStateChenged(qint32 userId, qint32 chatId, Chat::EChatState state)
+void Users::chatStateChenged(qint64 userId, qint64 chatId, Chat::EChatState state)
 {
     Q_ASSERT(userId != 0);
     Q_ASSERT(chatId != 0);

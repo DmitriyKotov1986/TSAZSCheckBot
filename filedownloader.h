@@ -20,11 +20,11 @@ public:
     FileDownloader(QObject* parent = nullptr);
     ~FileDownloader();
 
-    void download(qint32 chatId, qint32 userId, const QUrl& url);
+    void download(qint64 chatId, qint64 userId, const QUrl& url);
 
 signals:
-    void downloadComplite(qint32 chatId, qint32 userId, const QByteArray& data);
-    void downloadError(qint32 chatId, qint32 userId);
+    void downloadComplite(qint64 chatId, qint64 userId, const QByteArray& data);
+    void downloadError(qint64 chatId, qint64 userId);
     void sendLogMsg(Common::TDBLoger::MSG_CODE category, const QString& msg);
 
 private slots:
@@ -40,8 +40,8 @@ private:
     struct DownloadInfo
     {
         QUrl url;
-        qint32 chatId = 0;
-        qint32 userId = 0;
+        qint64 chatId = 0;
+        qint64 userId = 0;
         quint64 id = 0;
     };
 

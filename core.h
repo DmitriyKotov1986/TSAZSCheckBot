@@ -53,8 +53,8 @@ private slots:
     void callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery callback_query);
     void updateDataFromServer();
 
-    void downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteArray& data);
-    void downloadErrorDownloader(qint32 chatId, qint32 userId);
+    void downloadCompliteDownloader(qint64 chatId, qint64 userId, const QByteArray& data);
+    void downloadErrorDownloader(qint64 chatId, qint64 userId);
     void sendLogMsgDownloader(Common::TDBLoger::MSG_CODE category, const QString& msg);
 
 private:
@@ -70,36 +70,38 @@ private:
 private:
     Q_DISABLE_COPY_MOVE(Core)
 
-    void initUser(qint32 chatId, const Telegram::Message& message);
-    void removeUser(qint32 chatId, qint32 userId);
+    void sendMessage(const Telegram::FunctionArguments::SendMessage& arguments);
+
+    void initUser(qint64 chatId, const Telegram::Message& message);
+    void removeUser(qint64 chatId, qint64 userId);
 
     void rebootUsers(const QString& userMessage);
 
-    void startQuestionnaire(qint32 chatId, qint32 userId);
-    void finishQuestionnaire(qint32 chatId, qint32 userId);
-    void resultQuestionnaire(qint32 chatId, qint32 userId, const QDateTime& start, const QDateTime& end);
-    void loadQuestionnaire(qint32 chatId, qint32 userId);
-    void saveQuestionnaire(qint32 chatId, qint32 userId);
-    void nextQuestions(qint32 chatId, qint32 userId, qint32 questionId);
-    void saveAnswer(qint32 chatId, qint32 userId, qint32 questionId, const QVariant& answer);
+    void startQuestionnaire(qint64 chatId, qint64 userId);
+    void finishQuestionnaire(qint64 chatId, qint64 userId);
+    void resultQuestionnaire(qint64 chatId, qint64 userId, const QDateTime& start, const QDateTime& end);
+    void loadQuestionnaire(qint64 chatId, qint64 userId);
+    void saveQuestionnaire(qint64 chatId, qint64 userId);
+    void nextQuestions(qint64 chatId, qint64 userId, qint32 questionId);
+    void saveAnswer(qint64 chatId, qint64 userId, qint32 questionId, const QVariant& answer);
 
-    void startUsersEdit(qint32 chatId, qint32 userId);
-    void usersSelectList(qint32 chatId, qint32 userId, UserEditAction action);
-    void userConfirm(qint32 chatId, qint32 userId, qint32 userWorkId);
-    void userBlock(qint32 chatId, qint32 userId, qint32 userWorkId);
+    void startUsersEdit(qint64 chatId, qint64 userId);
+    void usersSelectList(qint64 chatId, qint64 userId, UserEditAction action);
+    void userConfirm(qint64 chatId, qint64 userId, qint64 userWorkId);
+    void userBlock(qint64 chatId, qint64 userId, qint64 userWorkId);
 
-    void selectDate(qint32 chatId, qint32 userId);
+    void selectDate(qint64 chatId, qint64 userId);
 
-    void cancel(qint32 chatId, qint32 userId);
+    void cancel(qint64 chatId, qint64 userId);
 
-    void setUserState(qint32 chatId, qint32 userId, ::User::EUserState state);
+    void setUserState(qint64 chatId, qint64 userId, ::User::EUserState state);
 
-    void startButton(qint32 chatId, ::User::EUserRole role);
-    void startUserButton(qint32 chatId);
-    void startAdminButton(qint32 chatId);
-    void startQuestionnaireButton(qint32 chatId);
-    void clearButton(qint32 chatId);
-    void cancelButton(qint32 chatId);
+    void startButton(qint64 chatId, ::User::EUserRole role);
+    void startUserButton(qint64 chatId);
+    void startAdminButton(qint64 chatId);
+    void startQuestionnaireButton(qint64 chatId);
+    void clearButton(qint64 chatId);
+    void cancelButton(qint64 chatId);
 
 private:
     TConfig* _cnf = nullptr;            ///< Глобальная конфигурация

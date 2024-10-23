@@ -16,7 +16,7 @@ Chat::EChatState Chat::intToEChatState(quint8 state)
     return EChatState::UNDEFINED;
 }
 
-Chat::Chat(qint32 chatId, EChatState state)
+Chat::Chat(qint64 chatId, EChatState state)
     : _chatId(chatId)
     , _state(state)
 {
@@ -29,7 +29,7 @@ Chat::~Chat()
 {
 }
 
-qint32 Chat::chatId() const
+qint64 Chat::chatId() const
 {
     return _chatId;
 }

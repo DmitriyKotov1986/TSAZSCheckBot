@@ -50,7 +50,7 @@ public:
 
     static EUserState intToEUserState(quint8 state);
 
-    using ChatsIdList = std::unordered_set<qint32>;
+    using ChatsIdList = std::unordered_set<qint64>;
 
 public:
     User(qint64 telegramID, const QString& firstName, const QString& lastName, const QString& userName, EUserRole role, EUserState state, QObject* parent = nullptr);
@@ -67,10 +67,10 @@ public:
     void addExistChat(std::unique_ptr<Chat> chat_p);
     void addNewChat(std::unique_ptr<Chat> chat_p);
 
-    void setChatState(qint32 chatId, Chat::EChatState state);
-    bool chatExist(qint32 chatId);
-    Chat& chat(qint32 chatId) const;
-    const Chat &chat_c(qint32 chatId)const;
+    void setChatState(qint64 chatId, Chat::EChatState state);
+    bool chatExist(qint64 chatId);
+    Chat& chat(qint64 chatId) const;
+    const Chat &chat_c(qint64 chatId)const;
     ChatsIdList chatIdList() const;
     ChatsIdList useChatIdList() const;
 
@@ -92,13 +92,13 @@ public:
     void clear();
 
 signals:
-    void roleChenged(qint32 userId, User::EUserRole role);
-    void stateChenged(qint32 userId, User::EUserState state);
-    void addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state);
-    void chatStateChenged(qint32 userId, qint32 chatId, Chat::EChatState state);
+    void roleChenged(qint64 userId, User::EUserRole role);
+    void stateChenged(qint64 userId, User::EUserState state);
+    void addNewChat(qint64 userId, qint64 chatId, Chat::EChatState state);
+    void chatStateChenged(qint64 userId, qint64 chatId, Chat::EChatState state);
 
 private slots:
-    void on_chatStateChenged(qint32 chatId, Chat::EChatState state);
+    void on_chatStateChenged(qint64 chatId, Chat::EChatState state);
 
 private:
     using QuestionsIterator = Questionnaire::AnswersQuestions::const_iterator;
@@ -110,7 +110,7 @@ private:
     const QString _userName;
     EUserRole _role = EUserRole::UNDEFINED;
     EUserState _state = EUserState::UNDEFINED;
-    std::unordered_map<qint32, std::unique_ptr<Chat>> _chats;
+    std::unordered_map<qint64, std::unique_ptr<Chat>> _chats;
 
     Questionnaire* _questionnaire = nullptr;
     QUuid _currentUUID;

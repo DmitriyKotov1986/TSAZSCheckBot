@@ -521,7 +521,7 @@ Questionnaire::AnswersQuestions  Questionnaire::makeAnswersQuestions() const
     return result;
 }
 
-void Questionnaire::saveResults(qint32 userId, const QUuid &uuid, const QDateTime startDateTime, const AnswersQuestions& questions)
+void Questionnaire::saveResults(qint64 userId, const QUuid &uuid, const QDateTime startDateTime, const AnswersQuestions& questions)
 {
     Q_ASSERT(_db.open());
 

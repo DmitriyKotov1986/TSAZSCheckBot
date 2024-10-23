@@ -22,7 +22,7 @@ class Users final
     Q_OBJECT
 
 public:
-    using UsersIDList = std::unordered_set<qint32>;
+    using UsersIDList = std::unordered_set<qint64>;
 
 public:
     explicit Users(const Common::DBConnectionInfo& dbConnectionInfo, QObject* parent = nullptr);
@@ -31,16 +31,16 @@ public:
     void loadFromDB();
 
     void addUser(std::unique_ptr<::User> user_p);
-    void removeUser(qint32 userId);
+    void removeUser(qint64 userId);
 
     UsersIDList userIdList() const;
     UsersIDList noConfirmUserIdList() const;
     UsersIDList confirmUserIdList() const;
 
-    ::User& user(qint32 userId) const;
-    const ::User& user_c(qint32 userId) const;
+    ::User& user(qint64 userId) const;
+    const ::User& user_c(qint64 userId) const;
 
-    bool userExist(qint32 userId) const;
+    bool userExist(qint64 userId) const;
 
     quint64 usersCount() const;
 
@@ -48,10 +48,10 @@ signals:
     void errorOccured(Common::EXIT_CODE errorCode, const QString &errorString);
 
 private slots:
-    void roleChenged(qint32 userId, User::EUserRole role);
-    void stateChenged(qint32 userId, User::EUserState state);
-    void addNewChat(qint32 userId, qint32 chatId, Chat::EChatState state);
-    void chatStateChenged(qint32 userId, qint32 chatId, Chat::EChatState state);
+    void roleChenged(qint64 userId, User::EUserRole role);
+    void stateChenged(qint64 userId, User::EUserState state);
+    void addNewChat(qint64 userId, qint64 chatId, Chat::EChatState state);
+    void chatStateChenged(qint64 userId, qint64 chatId, Chat::EChatState state);
 
 private:
     Users() = delete;
@@ -62,7 +62,7 @@ private:
 
     QSqlDatabase _db;
 
-    std::unordered_map<qint32, std::unique_ptr<::User>> _users;
+    std::unordered_map<qint64, std::unique_ptr<::User>> _users;
 
 };
 

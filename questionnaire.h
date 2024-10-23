@@ -40,7 +40,7 @@ public:
     qint32 questionPosition(qint32 index) const;
 
     AnswersQuestions makeAnswersQuestions() const;
-    void saveResults(qint32 userId, const QUuid& uuid, const QDateTime startDateTime, const AnswersQuestions& questions);
+    void saveResults(qint64 userId, const QUuid& uuid, const QDateTime startDateTime, const AnswersQuestions& questions);
 
     QString getAllResults(const QDateTime& startDateTime, const QDateTime& endDateTime);
 

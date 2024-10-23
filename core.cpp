@@ -10,7 +10,6 @@
 
 #include "buttondata.h"
 #include "qassert.h"
-#include "qregularexpression.h"
 #include "user.h"
 #include "chat.h"
 #include "core.h"
@@ -21,6 +20,73 @@ using namespace Telegram;
 quint64 Core::UUIDtoInt(const QUuid &uuid)
 {
     return uuid.data1 + uuid.data2 + uuid.data3;
+}
+
+void Core::sendMessage(const Telegram::FunctionArguments::SendMessage &arguments)
+{
+    Q_CHECK_PTR(_bot);
+
+    _bot->sendMessage(arguments);
+
+    QString chatIdStr;
+    if (const auto chat_id_qint64 = std::get_if<qint64>(&arguments.chat_id))
+    {
+        chatIdStr = QString::number(*chat_id_qint64);
+    }
+    else if (const auto chat_id_string = std::get_if<QString>(&arguments.chat_id))
+    {
+        chatIdStr = *chat_id_string;
+    }
+
+    auto msg = QString("Chat ID: %1 Text: '%2'").arg(chatIdStr).arg(arguments.text);
+
+    if (arguments.reply_markup.has_value())
+    {
+        const auto& replyMarkup = arguments.reply_markup.value();
+
+        if (const auto buttonsList = std::get_if<InlineKeyboardMarkup>(&replyMarkup))
+        {
+            msg += QString(" Inline buttons: [");
+            qint32 line = 1;
+            for (const auto& buttonsGroup: buttonsList->inline_keyboard)
+            {
+                msg += QString("Line %1:(").arg(line);
+                for (const auto& button: buttonsGroup)
+                {
+                    msg += QString("Text: '%1' Data: %2;").arg(button.text).arg(button.callback_data.has_value() ? button.callback_data.value() : "");
+                }
+                msg.removeLast();
+                msg += QString(");");
+                ++line;
+            }
+            msg.removeLast();
+            msg += QString("]");
+        }
+        else if (const auto buttonsList = std::get_if<ReplyKeyboardMarkup>(&replyMarkup))
+        {
+            msg += QString(" ReplyKeyboard buttons: [");
+            qint32 line = 1;
+            for (const auto& buttonsGroup: buttonsList->keyboard)
+            {
+                msg += QString("Line %1:(").arg(line);
+                for (const auto& button: buttonsGroup)
+                {
+                    msg += QString("Text: %1;").arg(button.text);
+                }
+                msg.removeLast();
+                msg += QString(");");
+                ++line;
+            }
+            msg.removeLast();
+            msg += QString("]");
+        }
+        else if (const auto buttonsList = std::get_if<ReplyKeyboardRemove>(&replyMarkup))
+        {
+            msg += QString(" ReplyKeyboardRemove");
+        }
+    }
+
+    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Send to user: %1").arg(msg));
 }
 
 Core::Core(QObject *parent)
@@ -55,10 +121,10 @@ void Core::start()
 
     _fileDownloader  = new FileDownloader();
 
-    QObject::connect(_fileDownloader, SIGNAL(downloadComplite(qint32, qint32, const QByteArray&)),
-                     SLOT(downloadCompliteDownloader(qint32, qint32, const QByteArray&)));
-    QObject::connect(_fileDownloader, SIGNAL(downloadError(qint32, qint32)),
-                     SLOT(downloadErrorDownloader(qint32, qint32)));
+    QObject::connect(_fileDownloader, SIGNAL(downloadComplite(qint64, qint64, const QByteArray&)),
+                     SLOT(downloadCompliteDownloader(qint64, qint64, const QByteArray&)));
+    QObject::connect(_fileDownloader, SIGNAL(downloadError(qint64, qint64)),
+                     SLOT(downloadErrorDownloader(qint64, qint64)));
     QObject::connect(_fileDownloader, SIGNAL(sendLogMsg(Common::TDBLoger::MSG_CODE, const QString&)),
                      SLOT(sendLogMsgDownloader(Common::TDBLoger::MSG_CODE, const QString&)));
 
@@ -203,7 +269,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
                 {
                     _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot download file. File no exist on server"));
 
-                    _bot->sendMessage(chatId, tr("Cannot load file from server. Try again"));
+                    sendMessage({.chat_id = chatId,
+                                 .text = tr("Cannot load file from server. Try again")});
 
                     setUserState(chatId, userId, ::User::EUserState::READY);
 
@@ -221,7 +288,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
 
     if (!message.text.has_value())
     {
-        _bot->sendMessage(message.chat->id, tr("Support only text command"));
+        sendMessage({.chat_id = message.chat->id,
+                     .text = tr("Support only text command")});
 
         return;
     }
@@ -250,7 +318,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
     }
     else  if (cmd == "/help")
     {
-        _bot->sendMessage(chatId, tr("Support commands:\n/start - start bot\n/stop - stop bot\n/help - this help"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Support commands:\n/start - start bot\n/stop - stop bot\n/help - this help")});
 
         return;
     }
@@ -258,7 +327,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
     //Проверяем есть ли такой пользователь
     if (!_users->userExist(userId) || _users->user_c(userId).role() == ::User::EUserRole::DELETED)
     {
-        _bot->sendMessage(chatId, tr("Unknow command. Please send the /start command to start and send message to Administrator"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Unknow command. Please send the /start command to start and send message to Administrator")});
 
         return;
     }
@@ -275,7 +345,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
     const auto role = _users->user_c(userId).role();
     if (role != ::User::EUserRole::USER && role != ::User::EUserRole::ADMIN)
     {
-        _bot->sendMessage(chatId, tr("Authorization has not been completed. Try letter"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Authorization has not been completed. Try letter")});
 
         return;
     }
@@ -302,7 +373,8 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
     //Проверяем активен есть ли права админа
     if (role != ::User::EUserRole::ADMIN)
     {
-        _bot->sendMessage(chatId, tr("Insufficient rights to perform the action"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Insufficient rights to perform the action")});
 
         return;
     }
@@ -325,12 +397,15 @@ void Core::messageReceivedBot(qint32 update_id, Telegram::Message message)
     }
     else
     {
-        _bot->sendMessage(chatId, tr("Unsupport command"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Unsupport command")});
     }
 }
 
 void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery callback_query)
 {
+    Q_UNUSED(message_id);
+
     _bot->answerCallbackQuery(callback_query.id);
 
     if (!callback_query.data.has_value())
@@ -353,13 +428,14 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
     {
         _bot->answerCallbackQuery(callback_query.id);
 
-        const auto userId = data.getParam("U").toInt();
-        const auto chatId = data.getParam("C").toInt();
+        const auto userId = data.getParam("U").toLongLong();
+        const auto chatId = data.getParam("C").toLongLong();
 
         auto& user = _users->user(userId);
         if (user.state() != ::User::EUserState::QUESTIONNAIRE)
         {
-            _bot->sendMessage(chatId, tr("This button is not active. Please click 'Start' on start menu for start questionnaire"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("This button is not active. Please click 'Start' on start menu for start questionnaire")});
 
             return;
         }
@@ -369,7 +445,8 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
         const auto& uuid = user.currentQUuid();
         if (uuid.isNull())
         {
-            _bot->sendMessage(chatId, tr("Questionnaire is not started. Retry"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Questionnaire is not started. Retry")});
 
             startButton(chatId, user.role());
 
@@ -383,7 +460,8 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
         }
         if (QString::number(UUIDtoInt(uuid)) != data.getParam("I"))
         {
-            _bot->sendMessage(chatId, tr("Questionnaire for this button already finished"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Questionnaire for this button already finished")});
 
             _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("User press button for already finished questionnaire. User ID: %1. Questionnaire: %2. Question ID: %3. Answer ID: %4")
                                                                          .arg(userId)
@@ -398,12 +476,13 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
     }
     else if (buttonName == "USEREDIT")
     {
-        const auto userId = data.getParam("U").toInt();
-        const auto chatId = data.getParam("C").toInt();
+        const auto userId = data.getParam("U").toLongLong();
+        const auto chatId = data.getParam("C").toLongLong();
         auto& user = _users->user(userId);
         if (user.state() != ::User::EUserState::USER_EDIT)
         {
-            _bot->sendMessage(chatId, tr("This button is not active. Please click 'Users' on start menu for edit users"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("This button is not active. Please click 'Users' on start menu for edit users")});
 
             return;
         }
@@ -432,10 +511,10 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
             switch (action)
             {
             case UserEditAction::UNBLOCK:
-                userConfirm(chatId, userId, userWorkId.toInt());
+                userConfirm(chatId, userId, userWorkId.toLongLong());
                 break;
             case UserEditAction::BLOCK:
-                userBlock(chatId, userId, userWorkId.toInt());
+                userBlock(chatId, userId, userWorkId.toLongLong());
                 break;
             default:
                 Q_ASSERT(false);
@@ -444,13 +523,14 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
     }
     else if (buttonName == "RESULT")
     {
-        const auto userId = data.getParam("U").toInt();
-        const auto chatId = data.getParam("C").toInt();
+        const auto userId = data.getParam("U").toLongLong();
+        const auto chatId = data.getParam("C").toLongLong();
 
         const auto& user = _users->user_c(userId);
         if (user.state() != ::User::EUserState::SAVE_RESULTS)
         {
-            _bot->sendMessage(chatId, tr("This button is not active. Please click 'Results' on start menu for save results"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("This button is not active. Please click 'Results' on start menu for save results")});
 
             return;
         }
@@ -477,7 +557,7 @@ void Core::updateDataFromServer()
     }
 }
 
-void Core::downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteArray &data)
+void Core::downloadCompliteDownloader(qint64 chatId, qint64 userId, const QByteArray &data)
 {
     auto& user = _users->user(userId);
     if (user.state() == ::User::EUserState::LOAD_QUESTIONNAIRE)
@@ -492,7 +572,8 @@ void Core::downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteA
         if (!fileBackup.open(QIODeviceBase::WriteOnly))
         {
             _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot save file: %1. Error: %2").arg(fileBackup.fileName()).arg(fileBackup.errorString()));
-            _bot->sendMessage(chatId, tr("Cannot load new questionnaire from server. Try again"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Cannot load new questionnaire from server. Try again")});
 
             setUserState(chatId, userId, ::User::EUserState::READY);
 
@@ -513,7 +594,8 @@ void Core::downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteA
         if (!fileNew.open(QIODeviceBase::WriteOnly))
         {
             _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot save file: %1. Error: %2").arg(fileNew.fileName()).arg(fileNew.errorString()));
-            _bot->sendMessage(chatId, tr("Cannot load new questionnaire from server. Try again"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Cannot load new questionnaire from server. Try again")});
 
             setUserState(chatId, userId, ::User::EUserState::READY);
 
@@ -529,14 +611,16 @@ void Core::downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteA
         {
             _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot load new questionnaire: %1").arg(resultStr));
 
-            _bot->sendMessage(chatId, tr("Cannot load new questionnaire: %1").arg(resultStr));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Cannot load new questionnaire: %1").arg(resultStr)});
 
             setUserState(chatId, userId, ::User::EUserState::READY);
         }
         else
         {
             _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("New questionnaire load successfully"));
-            _bot->sendMessage(chatId, tr("New questionnaire load successfully"));
+            sendMessage({.chat_id = chatId,
+                               .text = tr("New questionnaire load successfully")});
 
             rebootUsers(tr("The questionnaire has been reloaded by the administrator. Please start over"));
 
@@ -545,9 +629,10 @@ void Core::downloadCompliteDownloader(qint32 chatId, qint32 userId, const QByteA
     }
 }
 
-void Core::downloadErrorDownloader(qint32 chatId, qint32 userId)
+void Core::downloadErrorDownloader(qint64 chatId, qint64 userId)
 {
-    _bot->sendMessage(chatId, tr("Cannot load new questionnaire from server. Try again"));
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Cannot load new questionnaire from server. Try again")});
 
     setUserState(chatId, userId, ::User::EUserState::READY);
 }
@@ -557,7 +642,7 @@ void Core::sendLogMsgDownloader(Common::TDBLoger::MSG_CODE category, const QStri
     _loger->sendLogMsg(category, QString("Downloader: %1").arg(msg));
 }
 
-void Core::initUser(qint32 chatId, const Telegram::Message& message)
+void Core::initUser(qint64 chatId, const Telegram::Message& message)
 {
     const auto userId = message.from->id;
     if (_users->userExist(userId))
@@ -571,10 +656,12 @@ void Core::initUser(qint32 chatId, const Telegram::Message& message)
             startButton(chatId, role);
             break;
         case ::User::EUserRole::NO_CONFIRMED:
-            _bot->sendMessage(chatId, tr("Please wait for account confirmation from the administrator"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Please wait for account confirmation from the administrator")});
             break;
         case ::User::EUserRole::DELETED:
-            _bot->sendMessage(chatId, tr("Please wait for account unblocked from the administrator"));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Please wait for account unblocked from the administrator")});
             user.setRole(::User::EUserRole::NO_CONFIRMED);
             break;
         case ::User::EUserRole::UNDEFINED:
@@ -607,10 +694,11 @@ void Core::initUser(qint32 chatId, const Telegram::Message& message)
 
     _users->addUser(std::move(user_p));
 
-    _bot->sendMessage(chatId, tr("Welcome to TS AZS Check Bot. Please wait for account confirmation from the administrator"));
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Welcome to TS AZS Check Bot. Please wait for account confirmation from the administrator")});
 }
 
-void Core::removeUser(qint32 chatId, qint32 userId)
+void Core::removeUser(qint64 chatId, qint64 userId)
 {
     _users->removeUser(userId);
 
@@ -630,7 +718,8 @@ void Core::rebootUsers(const QString& userMessage)
             {
                 for (const auto& chatId: user.useChatIdList())
                 {
-                    _bot->sendMessage(chatId, userMessage);
+                    sendMessage({.chat_id = chatId,
+                                 .text = userMessage});
                     setUserState(chatId, userId, ::User::EUserState::READY);
                 }
             }
@@ -638,7 +727,7 @@ void Core::rebootUsers(const QString& userMessage)
     }
 }
 
-void Core::setUserState(qint32 chatId, qint32 userId, ::User::EUserState state)
+void Core::setUserState(qint64 chatId, qint64 userId, ::User::EUserState state)
 {
     Q_ASSERT(state != ::User::EUserState::UNDEFINED);
     Q_ASSERT(_users->userExist(userId));
@@ -648,7 +737,8 @@ void Core::setUserState(qint32 chatId, qint32 userId, ::User::EUserState state)
 
     if (role != ::User::EUserRole::USER && role != ::User::EUserRole::ADMIN && role != ::User::EUserRole::NO_CONFIRMED)
     {
-         _bot->sendMessage(chatId, tr("Authorization has not been completed. Please enter the /start command to start and send message to Administrator"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Authorization has not been completed. Please enter the /start command to start and send message to Administrator")});
 
         return;
     }
@@ -692,7 +782,7 @@ void Core::setUserState(qint32 chatId, qint32 userId, ::User::EUserState state)
     user.setState(state);
 }
 
-void Core::startQuestionnaire(qint32 chatId, qint32 userId)
+void Core::startQuestionnaire(qint64 chatId, qint64 userId)
 {
     setUserState(chatId, userId, ::User::EUserState::QUESTIONNAIRE);
 
@@ -704,13 +794,14 @@ void Core::startQuestionnaire(qint32 chatId, qint32 userId)
     _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Start questionnaire. User ID: %1. Questionnaire: %2").arg(userId).arg(user.currentQUuid().toString()));
 }
 
-void Core::finishQuestionnaire(qint32 chatId, qint32 userId)
+void Core::finishQuestionnaire(qint64 chatId, qint64 userId)
 {
     auto& user = _users->user(userId);
 
     if (user.state() != ::User::EUserState::QUESTIONNAIRE)
     {
-        _bot->sendMessage(chatId, tr("Questionnaire is not started. Retry"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Questionnaire is not started. Retry")});
 
         setUserState(chatId, userId, ::User::EUserState::READY);
 
@@ -721,14 +812,15 @@ void Core::finishQuestionnaire(qint32 chatId, qint32 userId)
 
     user.finishQuestionnaire();
 
-    _bot->sendMessage(chatId, tr("Questionnaire finished. Results saved as: %1").arg(uuid.toString()));
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Questionnaire finished. Results saved as: %1").arg(uuid.toString())});
 
     setUserState(chatId, userId, ::User::EUserState::READY);
 
     _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Finish questionnaire. User ID: %1. Questionnaire: %2").arg(userId).arg(uuid.toString()));
 }
 
-void Core::cancel(qint32 chatId, qint32 userId)
+void Core::cancel(qint64 chatId, qint64 userId)
 {
     auto& user = _users->user(userId);
 
@@ -736,7 +828,8 @@ void Core::cancel(qint32 chatId, qint32 userId)
     {
     case ::User::EUserState::QUESTIONNAIRE:
         user.cancelQuestionnaire();
-        _bot->sendMessage(chatId, tr("Questionnaire has been canceled"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Questionnaire has been canceled")});
         _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Cancel questionnaire. User ID: %1. Questionnaire: %2").arg(userId).arg(user.currentQUuid().toString()));
         break;
     case ::User::EUserState::LOAD_QUESTIONNAIRE:
@@ -753,7 +846,7 @@ void Core::cancel(qint32 chatId, qint32 userId)
     setUserState(chatId, userId, ::User::EUserState::READY);
 }
 
-void Core::resultQuestionnaire(qint32 chatId, qint32 userId, const QDateTime& start, const QDateTime& end)
+void Core::resultQuestionnaire(qint64 chatId, qint64 userId, const QDateTime& start, const QDateTime& end)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(userId != 0);
@@ -790,14 +883,15 @@ void Core::resultQuestionnaire(qint32 chatId, qint32 userId, const QDateTime& st
     setUserState(chatId, userId, ::User::EUserState::READY);
 }
 
-void Core::loadQuestionnaire(qint32 chatId, qint32 userId)
+void Core::loadQuestionnaire(qint64 chatId, qint64 userId)
 {
     setUserState(chatId, userId, ::User::EUserState::LOAD_QUESTIONNAIRE);
 
-    _bot->sendMessage(chatId, tr("Please send file contain new questionnire"));
+    sendMessage({.chat_id = chatId,
+                 .text =  tr("Please send file contain new questionnire")});
 }
 
-void Core::saveQuestionnaire(qint32 chatId, qint32 userId)
+void Core::saveQuestionnaire(qint64 chatId, qint64 userId)
 {
     _bot->sendChatAction(chatId, Telegram::Bot::ChatActionType::UPLOAD_DOCUMENT);
 
@@ -825,12 +919,13 @@ void Core::saveQuestionnaire(qint32 chatId, qint32 userId)
     _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("File with questionnaire sended. File: %1. User ID: %2").arg(file.fileName()).arg(userId));
 }
 
-void Core::startUsersEdit(qint32 chatId, qint32 userId)
+void Core::startUsersEdit(qint64 chatId, qint64 userId)
 {
     auto& user = _users->user(userId);
     if (user.role() != ::User::EUserRole::ADMIN)
     {
-        _bot->sendDocument(chatId, tr("Insufficient rights to perform the action"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Insufficient rights to perform the action")});
         return;
     }
 
@@ -863,12 +958,12 @@ void Core::startUsersEdit(qint32 chatId, qint32 userId)
     buttons.push_back(questionButtons);
 
     // Sending all inline buttons
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please click to 'Unblock' for confirmed user registration or 'Block' for user blocked and delete"),
-                       .reply_markup = buttons});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please click to 'Unblock' for confirmed user registration or 'Block' for user blocked and delete"),
+                 .reply_markup = buttons});
 }
 
-void Core::usersSelectList(qint32 chatId, qint32 userId, UserEditAction action)
+void Core::usersSelectList(qint64 chatId, qint64 userId, UserEditAction action)
 {
     Users::UsersIDList userList;
 
@@ -902,7 +997,22 @@ void Core::usersSelectList(qint32 chatId, qint32 userId, UserEditAction action)
         data.setParam("C", QString::number(chatId));
         data.setParam("A", QString::number(static_cast<quint8>(action)));
         data.setParam("E", QString::number(userWork.telegramID()));
-        InlineKeyboardButton questionButton(userWork.userName(), std::nullopt, std::nullopt, data.toString());
+
+        auto userName = userWork.userName();
+        if (userName.isEmpty())
+        {
+            userName = userWork.firstName();
+        }
+        if (userName.isEmpty())
+        {
+            userName = userWork.lastName();
+        }
+        if (userName.isEmpty())
+        {
+            userName = QString::number(userWork.telegramID());
+        }
+
+        InlineKeyboardButton questionButton(userName, std::nullopt, std::nullopt, data.toString());
 
         questionButtons.push_back(questionButton);
 
@@ -922,7 +1032,8 @@ void Core::usersSelectList(qint32 chatId, qint32 userId, UserEditAction action)
 
     if (inlineButtons.isEmpty())
     {
-        _bot->sendMessage(chatId, tr("No user for edit"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("No user for edit")});
 
         setUserState(chatId, userId, ::User::EUserState::READY);
 
@@ -930,12 +1041,12 @@ void Core::usersSelectList(qint32 chatId, qint32 userId, UserEditAction action)
     }
 
     // Sending all inline buttons
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please select user"),
-                       .reply_markup = inlineButtons});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please select user"),
+                 .reply_markup = inlineButtons});
 }
 
-void Core::userConfirm(qint32 chatId, qint32 userId, qint32 userWorkId)
+void Core::userConfirm(qint64 chatId, qint64 userId, qint64 userWorkId)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(userId != 0);
@@ -946,18 +1057,21 @@ void Core::userConfirm(qint32 chatId, qint32 userId, qint32 userWorkId)
 
     for (const auto& chatWorkID: userWork.useChatIdList())
     {
-        _bot->sendMessage(chatWorkID, tr("Congratulations! Administrator has added you to the list of confirmed users"));
+        sendMessage({.chat_id = chatWorkID,
+                     .text = tr("Congratulations! Administrator has added you to the list of confirmed users")});
+
         setUserState(userWorkId, chatWorkID, ::User::EUserState::READY);
     }
 
-    _bot->sendMessage(chatId, tr("User %1 successfully confirmed").arg(userWork.userName()));
+    sendMessage({.chat_id = chatId,
+                 .text = tr("User %1 successfully confirmed").arg(userWork.userName())});
 
     _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("User %1 successfully confirmed").arg(userWork.userName()));
 
     setUserState(chatId, userId, ::User::EUserState::READY);
 }
 
-void Core::userBlock(qint32 chatId, qint32 userId, qint32 userWorkId)
+void Core::userBlock(qint64 chatId, qint64 userId, qint64 userWorkId)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(userId != 0);
@@ -967,20 +1081,22 @@ void Core::userBlock(qint32 chatId, qint32 userId, qint32 userWorkId)
 
     for (const auto& chatWorkID: userWork.useChatIdList())
     {
-        _bot->sendMessage(chatWorkID, tr("Administrator has deleted you from the list of confirmed users. Please send the /start command to start and send message to Administrator"));
+       sendMessage({.chat_id = chatWorkID,
+                     .text = tr("Administrator has deleted you from the list of confirmed users. Please send the /start command to start and send message to Administrator")});
         setUserState(userWorkId, chatWorkID, ::User::EUserState::BLOCKED);
     }
 
     userWork.setRole(::User::EUserRole::DELETED);
 
-    _bot->sendMessage(chatId, tr("User %1 successfully deleted").arg(userWork.userName()));
+    sendMessage({.chat_id = chatId,
+                 .text = tr("User %1 successfully deleted").arg(userWork.userName())});
 
    _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("User %1 successfully delete").arg(userWork.userName()));
 
     setUserState(chatId, userId, ::User::EUserState::READY);
 }
 
-void Core::selectDate(qint32 chatId, qint32 userId)
+void Core::selectDate(qint64 chatId, qint64 userId)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(userId != 0);
@@ -988,7 +1104,8 @@ void Core::selectDate(qint32 chatId, qint32 userId)
     auto& user = _users->user(userId);
     if (user.role() != ::User::EUserRole::ADMIN)
     {
-        _bot->sendMessage(chatId, tr("Insufficient rights to perform the action"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Insufficient rights to perform the action")});
         return;
     }
 
@@ -1122,12 +1239,12 @@ void Core::selectDate(qint32 chatId, qint32 userId)
     questionButtons.clear();
 
     // Sending all inline buttons
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please select period for report of results"),
-                       .reply_markup = buttons});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please select period for report of results"),
+                 .reply_markup = buttons});
 }
 
-void Core::startButton(qint32 chatId, ::User::EUserRole role)
+void Core::startButton(qint64 chatId, ::User::EUserRole role)
 {
     Q_ASSERT(role != ::User::EUserRole::UNDEFINED);
 
@@ -1145,19 +1262,19 @@ void Core::startButton(qint32 chatId, ::User::EUserRole role)
     }
 }
 
-void Core::startUserButton(qint32 chatId)
+void Core::startUserButton(qint64 chatId)
 {
     KeyboardButton startButton(tr("Start"));
 
     ReplyKeyboardMarkup keyboard = {{startButton}};
 
     // Sending reply keyboard
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please click 'Start' button for new check AZS"),
-                       .reply_markup = keyboard});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please click 'Start' button for new check AZS"),
+                 .reply_markup = keyboard});
 }
 
-void Core::startAdminButton(qint32 chatId)
+void Core::startAdminButton(qint64 chatId)
 {
     KeyboardButton startButton(tr("Start"));
     KeyboardButton usersButton(tr("Users"));
@@ -1169,16 +1286,16 @@ void Core::startAdminButton(qint32 chatId)
     //  keyboard .resize_keyboard = true;
 
     // Sending reply keyboard
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please click:\n'Start' button for new check AZS\n"
-                                  "'Users' for edit users data\n"
-                                  "'Save' for save current questionnaire\n"
-                                  "'Load' for update questionnaire\n"
-                                  "'Results' for download questionnaire results"),
-                       .reply_markup = keyboard});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please click:\n'Start' button for new check AZS\n"
+                            "'Users' for edit users data\n"
+                            "'Save' for save current questionnaire\n"
+                            "'Load' for update questionnaire\n"
+                            "'Results' for download questionnaire results"),
+                 .reply_markup = keyboard});
 }
 
-void Core::startQuestionnaireButton(qint32 chatId)
+void Core::startQuestionnaireButton(qint64 chatId)
 {
     KeyboardButton finishButton(tr("Finish"));
     KeyboardButton cancelButton(tr("Cancel"));
@@ -1187,31 +1304,31 @@ void Core::startQuestionnaireButton(qint32 chatId)
     //  keyboard .resize_keyboard = true;
 
     // Sending reply keyboard
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please click 'Finish' button finished and save result or 'Cancel' to cancel"),
-                       .reply_markup = keyboard });
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please click 'Finish' button finished and save result or 'Cancel' to cancel"),
+                 .reply_markup = keyboard });
 }
 
-void Core::clearButton(qint32 chatId)
+void Core::clearButton(qint64 chatId)
 {
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Goodbye"),
-                       .reply_markup = ReplyKeyboardRemove()});
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Goodbye"),
+                 .reply_markup = ReplyKeyboardRemove()});
 }
 
-void Core::cancelButton(qint32 chatId)
+void Core::cancelButton(qint64 chatId)
 {
     KeyboardButton cancelButton(tr("Cancel"));
 
     ReplyKeyboardMarkup keyboard = {{cancelButton}};
     //  keyboard .resize_keyboard = true;
 
-    _bot->sendMessage({.chat_id = chatId,
-                       .text = tr("Please click 'Cancel' for cancel"),
-                       .reply_markup = keyboard });
+    sendMessage({.chat_id = chatId,
+                 .text = tr("Please click 'Cancel' for cancel"),
+                 .reply_markup = keyboard });
 }
 
-void Core::nextQuestions(qint32 chatId, qint32 userId, qint32 questionId)
+void Core::nextQuestions(qint64 chatId, qint64 userId, qint32 questionId)
 {
     const auto& user = _users->user(userId);
     const auto& uuid = user.currentQUuid();
@@ -1252,16 +1369,16 @@ void Core::nextQuestions(qint32 chatId, qint32 userId, qint32 questionId)
         InlineKeyboardMarkup inlineButtons(buttons);
 
         // Sending all inline buttons
-        _bot->sendMessage({.chat_id = chatId,
-                           .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text()),
-                           .reply_markup = inlineButtons});
+        sendMessage({.chat_id = chatId,
+                     .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text()),
+                     .reply_markup = inlineButtons});
 
         break;
     }
     case Question::EQuestionType::TEXT:
     {
-        _bot->sendMessage({.chat_id = chatId,
-                           .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text())});
+        sendMessage({.chat_id = chatId,
+                     .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text())});
 
         break;
     }
@@ -1273,7 +1390,7 @@ void Core::nextQuestions(qint32 chatId, qint32 userId, qint32 questionId)
     }
 }
 
-void Core::saveAnswer(qint32 chatId, qint32 userId, qint32 questionId, const QVariant &answer)
+void Core::saveAnswer(qint64 chatId, qint64 userId, qint32 questionId, const QVariant &answer)
 {
     auto& user = _users->user(userId);
     const auto maxQuestionId = user.maxQuestionId();
@@ -1287,7 +1404,8 @@ void Core::saveAnswer(qint32 chatId, qint32 userId, qint32 questionId, const QVa
 
     if (nextQuestionID < 0)
     {
-        _bot->sendMessage(chatId, tr("Congratulations! You have answered all the questions"));
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Congratulations! You have answered all the questions")});
 
         startQuestionnaireButton(chatId);
 

@@ -12,7 +12,7 @@ FileDownloader::~FileDownloader()
     delete _query;
 }
 
-void FileDownloader::download(qint32 chatId, qint32 userId, const QUrl &url)
+void FileDownloader::download(qint64 chatId, qint64 userId, const QUrl &url)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(userId != 0);

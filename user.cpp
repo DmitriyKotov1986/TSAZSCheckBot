@@ -89,7 +89,7 @@ void User::setRole(EUserRole role)
 
 void User::addNewChat(std::unique_ptr<Chat> chat_p)
 {
-    QObject::connect(chat_p.get(), SIGNAL(stateChenged(qint32, Chat::EChatState)), SLOT(on_chatStateChenged(qint32, Chat::EChatState)));
+    QObject::connect(chat_p.get(), SIGNAL(stateChenged(qint64, Chat::EChatState)), SLOT(on_chatStateChenged(qint64, Chat::EChatState)));
 
     const auto chatId = chat_p->chatId();
     const auto chatState = chat_p->state();
@@ -103,14 +103,14 @@ void User::addExistChat(std::unique_ptr<Chat> chat_p)
 {
     Q_CHECK_PTR(chat_p);
 
-    QObject::connect(chat_p.get(), SIGNAL(stateChenged(qint32, Chat::EChatState)), SLOT(on_chatStateChenged(qint32, Chat::EChatState)));
+    QObject::connect(chat_p.get(), SIGNAL(stateChenged(qint64, Chat::EChatState)), SLOT(on_chatStateChenged(qint64, Chat::EChatState)));
 
     const auto chatId = chat_p->chatId();
 
     _chats.emplace(chatId, std::move(chat_p));
 }
 
-void User::setChatState(qint32 chatId, Chat::EChatState state)
+void User::setChatState(qint64 chatId, Chat::EChatState state)
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(state != Chat::EChatState::UNDEFINED);
@@ -120,12 +120,12 @@ void User::setChatState(qint32 chatId, Chat::EChatState state)
     chat_p->setState(state);
 }
 
-bool User::chatExist(qint32 chatId)
+bool User::chatExist(qint64 chatId)
 {
     return _chats.contains(chatId);
 }
 
-Chat &User::chat(qint32 chatId) const
+Chat &User::chat(qint64 chatId) const
 {
     Q_ASSERT(chatId != 0);
     Q_ASSERT(_chats.contains(chatId));
@@ -133,7 +133,7 @@ Chat &User::chat(qint32 chatId) const
     return *_chats.at(chatId).get();
 }
 
-const Chat &User::chat_c(qint32 chatId) const
+const Chat &User::chat_c(qint64 chatId) const
 {
     return chat(chatId);
 }
@@ -252,7 +252,7 @@ void User::clear()
     _maxQuestionId = -1;
 }
 
-void User::on_chatStateChenged(qint32 chatId, Chat::EChatState state)
+void User::on_chatStateChenged(qint64 chatId, Chat::EChatState state)
 {
     emit chatStateChenged(_telegramID, chatId, state);
 }

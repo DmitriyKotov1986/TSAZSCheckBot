@@ -24,23 +24,23 @@ public:
     using RemoveDateTime = std::optional<QDateTime>;
 
 public:
-    explicit Chat(qint32 chatId, EChatState state);
+    explicit Chat(qint64 chatId, EChatState state);
     ~Chat();
 
-    qint32 chatId() const;
+    qint64 chatId() const;
 
     EChatState state() const;
     void setState(EChatState state);
 
 signals:
-    void stateChenged(qint32 chatId, Chat::EChatState state);
+    void stateChenged(qint64 chatId, Chat::EChatState state);
 
 private:
     Chat() = delete;
     Q_DISABLE_COPY_MOVE(Chat);
 
 private:
-    qint32 _chatId  = 0;
+    qint64 _chatId  = 0;
     EChatState _state = EChatState::UNDEFINED;
 
 };
