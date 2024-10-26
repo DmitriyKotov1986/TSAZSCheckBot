@@ -60,6 +60,25 @@ User::~User()
 {
 }
 
+QString User::getViewUserName() const
+{
+    auto userName = _userName;
+    if (userName.isEmpty())
+    {
+        userName = _firstName;
+    }
+    if (userName.isEmpty())
+    {
+        userName = _lastName;
+    }
+    if (userName.isEmpty())
+    {
+        userName = QString::number(_telegramID);
+    }
+
+    return userName;
+}
+
 ::User::EUserRole User::role() const
 {
     return _role;

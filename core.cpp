@@ -998,21 +998,7 @@ void Core::usersSelectList(qint64 chatId, qint64 userId, UserEditAction action)
         data.setParam("A", QString::number(static_cast<quint8>(action)));
         data.setParam("E", QString::number(userWork.telegramID()));
 
-        auto userName = userWork.userName();
-        if (userName.isEmpty())
-        {
-            userName = userWork.firstName();
-        }
-        if (userName.isEmpty())
-        {
-            userName = userWork.lastName();
-        }
-        if (userName.isEmpty())
-        {
-            userName = QString::number(userWork.telegramID());
-        }
-
-        InlineKeyboardButton questionButton(userName, std::nullopt, std::nullopt, data.toString());
+        InlineKeyboardButton questionButton(userWork.getViewUserName(), std::nullopt, std::nullopt, data.toString());
 
         questionButtons.push_back(questionButton);
 

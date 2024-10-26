@@ -564,7 +564,7 @@ void Questionnaire::saveResults(qint64 userId, const QUuid &uuid, const QDateTim
                     continue;
                 }
 
-                answerText = questionInfo->text();
+                answerText = questionInfo->getAnswer(answerIndex).toString();
                 break;
             }
             case Question::EQuestionType::DELETED:
@@ -610,10 +610,10 @@ QString Questionnaire::getAllResults(const QDateTime& startDateTime, const QDate
         query.setForwardOnly(true);
 
         const auto queryText =
-            QString("SELECT `UUID`, `UserName`, `StartDateTime`, `FinishDateTime`, `QuestionText`, `AnswerText` "
+            QString("SELECT `UUID`, `TelegramID`, `UserName`, `FirstName`, `LastName`, `StartDateTime`, `FinishDateTime`, `QuestionText`, `AnswerText` "
                     "FROM `ResultQuestionnaire` AS A "
                     "INNER JOIN ( "
-                        "SELECT `TelegramID`, `UserName` "
+                        "SELECT `TelegramID`, `UserName`, `FirstName`, `LastName` "
                         "FROM `Users` AS B "
                     ") AS C "
                     "ON C.`TelegramID` = A.`UserID` "
@@ -631,10 +631,24 @@ QString Questionnaire::getAllResults(const QDateTime& startDateTime, const QDate
 
         while (query.next())
         {
+            auto userName = query.value("UserName").toString();
+            if (userName.isEmpty())
+            {
+                userName = query.value("FirstName").toString();
+            }
+            if (userName.isEmpty())
+            {
+                userName = query.value("LastName").toString();
+            }
+            if (userName.isEmpty())
+            {
+                userName = query.value("TelegramID").toString();
+            }
+
             QStringList data;
 
             data << query.value("UUID").toString();
-            data << query.value("UserName").toString();
+            data << userName;
             data << query.value("StartDateTime").toDateTime().toString(SIMPLY_DATETIME_FORMAT);
             data << query.value("FinishDateTime").toDateTime().toString(SIMPLY_DATETIME_FORMAT);
             data << query.value("QuestionText").toString();

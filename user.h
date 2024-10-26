@@ -61,6 +61,8 @@ public:
     const QString& lastName() const { return _lastName; }
     const QString& userName() const { return _userName; }
 
+    QString getViewUserName() const;
+
     EUserRole role() const;
     void setRole(EUserRole role);
 
