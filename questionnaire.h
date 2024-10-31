@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QVariant>
 #include <QJsonParseError>
+#include <QSqlDatabase>
 
 //My
 #include <Common/common.h>
@@ -45,7 +46,7 @@ public:
     QString getAllResults(const QDateTime& startDateTime, const QDateTime& endDateTime);
 
 signals:
-    void errorOccured(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurred(Common::EXIT_CODE errorCode, const QString &errorString);
 
 private:
     Questionnaire() = delete;

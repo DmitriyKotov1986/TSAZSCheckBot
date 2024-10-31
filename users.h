@@ -45,7 +45,7 @@ public:
     quint64 usersCount() const;
 
 signals:
-    void errorOccured(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurred(Common::EXIT_CODE errorCode, const QString &errorString);
 
 private slots:
     void roleChenged(qint64 userId, User::EUserRole role);

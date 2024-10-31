@@ -3,6 +3,8 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QTimer>
+#include <QCommandLineParser>
+#include <QFileInfo>
 
 //My
 #include <Common/common.h>
@@ -31,23 +33,35 @@ int main(int argc, char *argv[])
     }
 
     //Создаем парсер параметров командной строки
-    if ((argc > 1) && (!std::strcmp(argv[1], std::string("--version").c_str())))
+    QCommandLineParser parser;
+    parser.setApplicationDescription("The Telegram TS AZS check bot");
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    //добавляем опцию Config
+    QCommandLineOption config(QStringList() << "c" << "config", "Config file name", "FileName", QString("%1/%2.ini").arg(a.applicationDirPath()).arg(a.applicationName()));
+    parser.addOption(config);
+
+    //добавляем опцию MakeConfig
+    QCommandLineOption makeConfig(QStringList() << "m" << "makeconfig", "Create new config file");
+    parser.addOption(makeConfig);
+
+    //Парсим опции командной строки
+    parser.process(a);
+
+    if (parser.isSet(makeConfig))
     {
-        QTextStream outStream(stdout);
-        outStream << QString("%1 %2\n").arg(QCoreApplication::applicationName()).arg(QCoreApplication::applicationVersion());
+        TConfig::makeConfig(QFileInfo(parser.value(config)).absoluteFilePath());
 
         return EXIT_CODE::OK;
     }
-
-    const QString applicationDirName = QFileInfo(argv[0]).absolutePath();
-    const QString configFileName = QString("%1/%2.ini").arg(applicationDirName).arg(QCoreApplication::applicationName());
 
     TConfig* cnf = nullptr;
     TDBLoger* loger = nullptr;
     Core* core = nullptr;
     try
     {
-        cnf = TConfig::config(configFileName);
+        cnf = TConfig::config(parser.value(config));
         if (cnf->isError())
         {
             throw StartException(EXIT_CODE::LOAD_CONFIG_ERR, QString("Error load configuration: %1").arg(cnf->errorString()));

@@ -4,6 +4,9 @@
 //Qt
 #include <QSqlQuery>
 
+//My
+#include <Common/sql.h>
+
 #include "users.h"
 
 static const QString DB_CONNECTION_NAME = "UsersDB";
@@ -34,7 +37,7 @@ void Users::loadFromDB()
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return;
     }
@@ -151,7 +154,7 @@ void Users::loadFromDB()
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -159,7 +162,7 @@ void Users::loadFromDB()
     {
         _db.rollback();
 
-        emit errorOccured(EXIT_CODE::LOAD_CONFIG_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::LOAD_CONFIG_ERR, err.what());
 
         return;
     }
@@ -213,7 +216,7 @@ void Users::addUser(std::unique_ptr<::User> user_p)
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -322,7 +325,7 @@ void Users::roleChenged(qint64 userId, User::EUserRole role)
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -346,7 +349,7 @@ void Users::stateChenged(qint64 userId, User::EUserState state)
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -372,7 +375,7 @@ void Users::addNewChat(qint64 userId, qint64 chatId, Chat::EChatState state)
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }
@@ -399,7 +402,7 @@ void Users::chatStateChenged(qint64 userId, qint64 chatId, Chat::EChatState stat
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_EXECUTE_QUERY_ERR, err.what());
 
         return;
     }

@@ -6,8 +6,10 @@
 #include <QJsonObject>
 
 //My
-#include "QtCSV/stringdata.h"
-#include "QtCSV/writer.h"
+#include <QtCSV/stringdata.h>
+#include <QtCSV/writer.h>
+
+#include <Common/sql.h>
 
 #include "questionnaire.h"
 
@@ -31,7 +33,7 @@ void Questionnaire::loadFromDB()
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return;
     }
@@ -160,7 +162,7 @@ void Questionnaire::loadFromDB()
     {
         _db.rollback();
 
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return;
     }
@@ -168,7 +170,7 @@ void Questionnaire::loadFromDB()
     {
         _db.rollback();
 
-        emit errorOccured(EXIT_CODE::LOAD_CONFIG_ERR, err.what());
+        emit errorOccurred(EXIT_CODE::LOAD_CONFIG_ERR, err.what());
 
         return;
     }
@@ -366,7 +368,7 @@ QString Questionnaire::loadFromString(const QString &data)
     {
         _db.rollback();
 
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return tr("Cannot save questionnaire to DB");
     }
@@ -436,7 +438,7 @@ QString Questionnaire::toString()
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return {};
     }
@@ -586,7 +588,7 @@ void Questionnaire::saveResults(qint64 userId, const QUuid &uuid, const QDateTim
     }
     catch (const SQLException& err)
     {
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return;
     }
@@ -663,7 +665,7 @@ QString Questionnaire::getAllResults(const QDateTime& startDateTime, const QDate
     {
         _db.rollback();
 
-        emit errorOccured(EXIT_CODE::SQL_NOT_CONNECT, err.what());
+        emit errorOccurred(EXIT_CODE::SQL_NOT_CONNECT, err.what());
 
         return {};
     }

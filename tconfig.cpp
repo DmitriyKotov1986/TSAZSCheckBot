@@ -10,6 +10,8 @@ using namespace Common;
 
 //static
 static TConfig* configPtr = nullptr;
+Q_GLOBAL_STATIC_WITH_ARGS(const QString, CONFIG_DB_NAME, ("Config"))
+Q_GLOBAL_STATIC_WITH_ARGS(const QString, UPDATEID_PARAM_NAME, ("UpdateID"))
 
 TConfig* TConfig::config(const QString& configFileName)
 {
@@ -29,16 +31,78 @@ void TConfig::deleteConfig()
     configPtr = nullptr;
 }
 
-//public
-TConfig::TConfig(const QString& configFileName) :
-    _configFileName(configFileName)
+void TConfig::makeConfig(const QString& configFileName)
 {
-    if (_configFileName.isEmpty()) {
+    if (configFileName.isEmpty())
+    {
+        qWarning() << "Configuration file name cannot be empty";
+
+        return;
+    }
+
+    QSettings ini(configFileName, QSettings::IniFormat);
+
+    if (!ini.isWritable())
+    {
+        qWarning() << QString("Can not write configuration file: %1").arg(configFileName);
+
+        return;
+    }
+
+    ini.clear();
+
+    //Database
+    ini.beginGroup("DATABASE");
+
+    ini.remove("");
+
+    ini.setValue("Driver", "QMYSQL");
+    ini.setValue("DataBase", "TSAZSCheckBotDB");
+    ini.setValue("UID", "user");
+    ini.setValue("PWD", "password");
+    ini.setValue("ConnectionOprions", "");
+    ini.setValue("Port", "3306");
+    ini.setValue("Host", "localhost");
+
+    ini.endGroup();
+
+    //System
+    ini.beginGroup("SYSTEM");
+
+    ini.remove("");
+
+    ini.setValue("DebugMode", true);
+
+    ini.endGroup();
+
+
+    //Bot
+    ini.beginGroup("BOT");
+
+    ini.remove("");
+
+    ini.setValue("Token", "API token");
+
+    ini.endGroup();
+
+    //сбрасываем буфер
+    ini.sync();
+
+    qInfo() << QString("Save configuration to %1").arg(configFileName);
+}
+
+//public
+TConfig::TConfig(const QString& configFileName)
+    : _configFileName(configFileName)
+{
+    if (_configFileName.isEmpty())
+    {
         _errorString = "Configuration file name cannot be empty";
 
         return;
     }
-    if (!QFileInfo::exists(_configFileName)) {
+    if (!QFileInfo::exists(_configFileName))
+    {
         _errorString = QString("Configuration file not exist. File name: %1").arg(_configFileName);
 
         return;
@@ -97,84 +161,39 @@ TConfig::TConfig(const QString& configFileName) :
         return;
     }
 
-    _bot_updateId = ini.value("UpdateID", "").toULongLong();
-
     ini.endGroup();
 }
 
 TConfig::~TConfig()
 {
-    if (!isError())
-    {
-        save();
-    }
+    delete _dbConfig;
 }
 
-bool TConfig::save()
+qint32 TConfig::bot_updateId()
 {
-    QSettings ini(_configFileName, QSettings::IniFormat);
+    loadFromDB();
 
-    if (!ini.isWritable()) {
-        _errorString = "Can not write configuration file " +  _configFileName;
+    auto valueStr = _dbConfig->getValue(*UPDATEID_PARAM_NAME);
+    bool ok = false;
+    qint32 result = valueStr.toInt(&ok);
 
-        return false;
-    }
-
-    ini.clear();
-
-    //Database
-    ini.beginGroup("DATABASE");
-
-    ini.remove("");
-
-    ini.setValue("Driver", _dbConnectionInfo.db_Driver);
-    ini.setValue("DataBase", _dbConnectionInfo.db_DBName);
-    ini.setValue("UID", _dbConnectionInfo.db_UserName);
-    ini.setValue("PWD", _dbConnectionInfo.db_Password);
-    ini.setValue("ConnectionOprions", _dbConnectionInfo.db_ConnectOptions);
-    ini.setValue("Port", _dbConnectionInfo.db_Port);
-    ini.setValue("Host", _dbConnectionInfo.db_Host);
-
-    ini.endGroup();
-
-    //System
-    ini.beginGroup("SYSTEM");
-
-    ini.remove("");
-
-    ini.setValue("DebugMode", _sys_DebugMode);
-
-    ini.endGroup();
-
-
-    //Bot
-    ini.beginGroup("BOT");
-
-    ini.remove("");
-
-    ini.setValue("Token", _bot_token);
-    ini.setValue("UpdateID", _bot_updateId);
-
-    ini.endGroup();
-
-    //сбрасываем буфер
-    ini.sync();
-
-    if (_sys_DebugMode)
+    if (!ok)
     {
-        qDebug() << QString("Save configuration to %1").arg(_configFileName);
+        qWarning() << QString("Key value [ConfigDB]/UpdateID must be number. Value: %1").arg(valueStr);
+
+        set_bot_UpdateId(result);
     }
 
-    return true;
+    return result;
 }
 
 void TConfig::set_bot_UpdateId(qint32 updateId)
 {
-    Q_ASSERT(_bot_updateId <= updateId);
+    loadFromDB();
 
-    _bot_updateId = updateId;
+    Q_ASSERT(_dbConfig->getValue(*UPDATEID_PARAM_NAME).toInt() <= updateId);
 
-    save();
+    _dbConfig->setValue(*UPDATEID_PARAM_NAME, QString::number(updateId));
 }
 
 QString TConfig::errorString()
@@ -183,5 +202,29 @@ QString TConfig::errorString()
     _errorString.clear();
 
     return res;
+}
+
+void TConfig::errorOccurredDBConfig(Common::EXIT_CODE errorCode, const QString &errorString)
+{
+    _errorString = errorString;
+
+    emit errorOccurred(errorCode, errorString);
+}
+
+void TConfig::loadFromDB()
+{
+    if (_dbConfig)
+    {
+        return;
+    }
+
+    _dbConfig = new TDBConfig(_dbConnectionInfo, *CONFIG_DB_NAME);
+
+    QObject::connect(_dbConfig, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)), SLOT(errorOccurredDBConfig(Common::EXIT_CODE, const QString&)));
+
+    if (_dbConfig->isError())
+    {
+            _errorString = _dbConfig->errorString();
+    }
 }
 

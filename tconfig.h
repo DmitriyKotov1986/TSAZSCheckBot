@@ -2,25 +2,24 @@
 
 //QT
 #include <QString>
+#include <QObject>
 
+//My
 #include "Common/common.h"
+#include "Common/tdbconfig.h"
 
 class TConfig final
+    : public QObject
 {
+    Q_OBJECT
+
 public:
     static TConfig* config(const QString& configFileName = "");
     static void deleteConfig();
 
-private:
-    TConfig() = delete;
-    Q_DISABLE_COPY_MOVE(TConfig)
-
-    explicit TConfig(const QString& configFileName);
-    ~TConfig();
+    static void makeConfig(const QString& configFileName);
 
 public:
-    bool save();
-
     //[DATABASE]
     const Common::DBConnectionInfo& dbConnectionInfo() const { return _dbConnectionInfo; };
 
@@ -29,17 +28,35 @@ public:
 
     //[BOT]
     const QString& bot_token() const { return _bot_token; }
-    qint32 bot_updateId() const { return _bot_updateId; }
+
+    qint32 bot_updateId();
     void set_bot_UpdateId(qint32 updateId);
 
     //errors
     QString errorString();
     bool isError() const { return !_errorString.isEmpty(); }
 
+signals:
+    void errorOccurred(Common::EXIT_CODE errorCode, const QString& errorString);
+
+private slots:
+    void errorOccurredDBConfig(Common::EXIT_CODE errorCode, const QString& errorString);
+
+private:
+    TConfig() = delete;
+    Q_DISABLE_COPY_MOVE(TConfig)
+
+    explicit TConfig(const QString& configFileName);
+    ~TConfig();
+
+    void loadFromDB();
+
 private:
     const QString _configFileName;
 
     QString _errorString;
+
+    Common::TDBConfig* _dbConfig = nullptr;
 
     //[DATABASE]
     Common::DBConnectionInfo _dbConnectionInfo;
@@ -49,6 +66,5 @@ private:
 
     //[BOT]
     QString _bot_token;
-    qint32 _bot_updateId = 0;
 
 };

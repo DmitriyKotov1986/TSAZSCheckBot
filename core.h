@@ -43,12 +43,13 @@ public slots:
     void stop();
 
 private slots:
-    void errorOccuredLoger(Common::EXIT_CODE errorCode, const QString &errorString);
-    void errorOccuredUsers(Common::EXIT_CODE errorCode, const QString &errorString);
-    void errorOccuredQuestionnaire(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurredLoger(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurredUsers(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurredQuestionnaire(Common::EXIT_CODE errorCode, const QString &errorString);
+    void errorOccurredConfig(Common::EXIT_CODE errorCode, const QString &errorString);
 
-    void errorOccuredBot(Telegram::Error error);
-    void networkErrorOccuredBot(Telegram::Error error);
+    void errorOccurredBot(Telegram::Error error);
+    void networkerrorOccurredBot(Telegram::Error error);
     void messageReceivedBot(qint32 update_id, Telegram::Message message);
     void callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery callback_query);
     void updateDataFromServer();
@@ -99,7 +100,10 @@ private:
     void startButton(qint64 chatId, ::User::EUserRole role);
     void startUserButton(qint64 chatId);
     void startAdminButton(qint64 chatId);
+
+    static Telegram::ReplyKeyboardMarkup startFinishButton();
     void startQuestionnaireButton(qint64 chatId);
+
     void clearButton(qint64 chatId);
     void cancelButton(qint64 chatId);
 

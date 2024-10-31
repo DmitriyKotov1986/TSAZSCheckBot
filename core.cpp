@@ -98,8 +98,9 @@ Core::Core(QObject *parent)
     Q_CHECK_PTR(_loger);
 
     QObject::connect(_loger, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)),
-                     SLOT(errorOccuredLoger(Common::EXIT_CODE, const QString&)), Qt::DirectConnection);
+                     SLOT(errorOccurredLoger(Common::EXIT_CODE, const QString&)), Qt::DirectConnection);
 
+    QObject::connect(_cnf, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)), SLOT(errorOccurredConfig(Common::EXIT_CODE, const QString&)), Qt::DirectConnection);
 }
 
 Core::~Core()
@@ -132,7 +133,7 @@ void Core::start()
     Q_ASSERT(_users == nullptr);
     _users = new Users(_cnf->dbConnectionInfo());
 
-    QObject::connect(_users, SIGNAL(errorOccured(Common::EXIT_CODE, const QString&)), SLOT(errorOccuredUsers(Common::EXIT_CODE, const QString&)));
+    QObject::connect(_users, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)), SLOT(errorOccurredUsers(Common::EXIT_CODE, const QString&)));
 
     _users->loadFromDB();
 
@@ -142,7 +143,7 @@ void Core::start()
     Q_ASSERT(_questionnaire == nullptr);
     _questionnaire = new Questionnaire(_cnf->dbConnectionInfo());
 
-    QObject::connect(_questionnaire, SIGNAL(errorOccured(Common::EXIT_CODE, const QString&)), SLOT(errorOccuredQuestionnaire(Common::EXIT_CODE, const QString&)));
+    QObject::connect(_questionnaire, SIGNAL(errorOccurred(Common::EXIT_CODE, const QString&)), SLOT(errorOccurredQuestionnaire(Common::EXIT_CODE, const QString&)));
 
     _questionnaire->loadFromDB();
 
@@ -151,11 +152,11 @@ void Core::start()
 
     _bot = new Bot(botSettings);
 
-    //	Telegram::Bot::errorOccured is emitted every time when the negative response is received from the Telegram server and holds an Error object in arguments. Error class contains the occurred error description and code. See Error.h for details
-    QObject::connect(_bot, SIGNAL(errorOccured(Telegram::Error)), SLOT(errorOccuredBot(Telegram::Error)));
+    //	Telegram::Bot::errorOccurred is emitted every time when the negative response is received from the Telegram server and holds an Error object in arguments. Error class contains the occurred error description and code. See Error.h for details
+    QObject::connect(_bot, SIGNAL(errorOccurred(Telegram::Error)), SLOT(errorOccurredBot(Telegram::Error)));
 
-    //	Telegram::Bot::networkErrorOccured is emitted every time when there is an error while receiving Updates from the Telegram. Error class contains the occurred error description and code. See Error.h for details
-    QObject::connect(_bot, SIGNAL(networkErrorOccured(Telegram::Error)), SLOT(networkErrorOccuredBot(Telegram::Error)));
+    //	Telegram::Bot::networkerrorOccurred is emitted every time when there is an error while receiving Updates from the Telegram. Error class contains the occurred error description and code. See Error.h for details
+    QObject::connect(_bot, SIGNAL(networkerrorOccurred(Telegram::Error)), SLOT(networkerrorOccurredBot(Telegram::Error)));
 
     // Connecting messageReceived() signal to a lambda that sends the received message back to the sender
     QObject::connect(_bot, SIGNAL(messageReceived(qint32, Telegram::Message)), SLOT(messageReceivedBot(qint32, Telegram::Message)));
@@ -203,7 +204,7 @@ void Core::stop()
     _isStarted = false;
 }
 
-void Core::errorOccuredLoger(Common::EXIT_CODE errorCode, const QString &errorString)
+void Core::errorOccurredLoger(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     QString msg = QString("Critical error while the Loger is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
     qCritical() << msg;
@@ -211,7 +212,7 @@ void Core::errorOccuredLoger(Common::EXIT_CODE errorCode, const QString &errorSt
     QCoreApplication::exit(errorCode);
 }
 
-void Core::errorOccuredUsers(Common::EXIT_CODE errorCode, const QString &errorString)
+void Core::errorOccurredUsers(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     QString msg = QString("Critical error while the Users is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
     qCritical() << msg;
@@ -220,7 +221,7 @@ void Core::errorOccuredUsers(Common::EXIT_CODE errorCode, const QString &errorSt
     QCoreApplication::exit(errorCode);
 }
 
-void Core::errorOccuredQuestionnaire(Common::EXIT_CODE errorCode, const QString &errorString)
+void Core::errorOccurredQuestionnaire(Common::EXIT_CODE errorCode, const QString &errorString)
 {
     QString msg = QString("Critical error while the Questionnaire is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
     qCritical() << msg;
@@ -229,7 +230,16 @@ void Core::errorOccuredQuestionnaire(Common::EXIT_CODE errorCode, const QString 
     QCoreApplication::exit(errorCode);
 }
 
-void Core::errorOccuredBot(Telegram::Error error)
+void Core::errorOccurredConfig(Common::EXIT_CODE errorCode, const QString &errorString)
+{
+    QString msg = QString("Critical error while the Config is running. Code: %1 Message: %2").arg(errorCode).arg(errorString);
+    qCritical() << msg;
+    _loger->sendLogMsg(TDBLoger::MSG_CODE::CRITICAL_CODE, msg);
+
+    QCoreApplication::exit(errorCode);
+}
+
+void Core::errorOccurredBot(Telegram::Error error)
 {
     _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE,
         QString("Got negative response is received from the Telegram server. Code: %1. Message: %2")
@@ -237,7 +247,7 @@ void Core::errorOccuredBot(Telegram::Error error)
             .arg(error.description));
 }
 
-void Core::networkErrorOccuredBot(Telegram::Error error)
+void Core::networkerrorOccurredBot(Telegram::Error error)
 {
     _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE,
                        QString("Got is an error while receiving Updates from the Telegram server. Code: %1. Message: %2")
@@ -488,7 +498,7 @@ void Core::callbackQueryReceivedBot(qint32 message_id, Telegram::CallbackQuery c
         }
 
         const auto action_int = data.getParam("A").toUInt();
-        UserEditAction action;
+        UserEditAction action = UserEditAction::BLOCK;;
         switch (action_int)
         {
         case static_cast<quint8>(UserEditAction::UNBLOCK):
@@ -568,6 +578,17 @@ void Core::downloadCompliteDownloader(qint64 chatId, qint64 userId, const QByteA
 
         _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Create backup questionnaire before update. File name: ").arg(fileNameBackup));
 
+        if (!makeFilePath(fileNameBackup))
+        {
+            _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot make dir for file: %1").arg(fileNameBackup));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Cannot load new questionnaire from server. Try again")});
+
+            setUserState(chatId, userId, ::User::EUserState::READY);
+
+            return;
+        }
+
         QFile fileBackup(fileNameBackup);
         if (!fileBackup.open(QIODeviceBase::WriteOnly))
         {
@@ -589,6 +610,17 @@ void Core::downloadCompliteDownloader(qint64 chatId, qint64 userId, const QByteA
                                         .arg(QDateTime::currentDateTime().toString("yyyyMMddhhmmss"));
 
         _loger->sendLogMsg(TDBLoger::MSG_CODE::INFORMATION_CODE, QString("Save new questionnaire into file: %1").arg(fileNameNew));
+
+        if (!makeFilePath(fileNameNew))
+        {
+            _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot make dir for file: %1").arg(fileNameNew));
+            sendMessage({.chat_id = chatId,
+                         .text = tr("Cannot load new questionnaire from server. Try again")});
+
+            setUserState(chatId, userId, ::User::EUserState::READY);
+
+            return;
+        }
 
         QFile fileNew(fileNameNew);
         if (!fileNew.open(QIODeviceBase::WriteOnly))
@@ -861,10 +893,27 @@ void Core::resultQuestionnaire(qint64 chatId, qint64 userId, const QDateTime& st
                             .arg(start.toString("yyyyMMddhhmmss"))
                             .arg(end.toString("yyyyMMddhhmmss"));
 
+    if (!makeFilePath(fileName))
+    {
+        _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot make dir for file: %1").arg(fileName));
+
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Cannot save questionnaires results. Try again")});
+
+        setUserState(chatId, userId, ::User::EUserState::READY);
+
+        return;
+    }
+
     QFile file(fileName);
     if (!file.open(QIODeviceBase::WriteOnly))
     {
         _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot save file: %1. Error: %2").arg(file.fileName()).arg(file.errorString()));
+
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Cannot save questionnaires results. Try again")});
+
+        setUserState(chatId, userId, ::User::EUserState::READY);
 
         return;
     }
@@ -898,10 +947,28 @@ void Core::saveQuestionnaire(qint64 chatId, qint64 userId)
     const auto results = _questionnaire->toString();
 
     const auto fileName = QString("%1/QuestionnaireSave/Questionnaire_%2.json").arg(QCoreApplication::applicationDirPath()).arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+
+    if (!makeFilePath(fileName))
+    {
+        _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot make dir for file: %1").arg(fileName));
+
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Cannot send questionnaires file. Try again")});
+
+        setUserState(chatId, userId, ::User::EUserState::READY);
+
+        return;
+    }
+
     QFile file(fileName);
     if (!file.open(QIODeviceBase::WriteOnly))
     {
         _loger->sendLogMsg(TDBLoger::MSG_CODE::WARNING_CODE, QString("Cannot save file: %1. Error: %2").arg(file.fileName()).arg(file.errorString()));
+
+        sendMessage({.chat_id = chatId,
+                     .text = tr("Cannot send questionnaires file. Try again")});
+
+        setUserState(chatId, userId, ::User::EUserState::READY);
 
         return;
     }
@@ -1269,7 +1336,6 @@ void Core::startAdminButton(qint64 chatId)
     KeyboardButton resultsButton(tr("Results"));
 
     ReplyKeyboardMarkup keyboard = {{startButton, resultsButton}, {loadButton, saveButton}, {usersButton}};
-    //  keyboard .resize_keyboard = true;
 
     // Sending reply keyboard
     sendMessage({.chat_id = chatId,
@@ -1281,18 +1347,20 @@ void Core::startAdminButton(qint64 chatId)
                  .reply_markup = keyboard});
 }
 
-void Core::startQuestionnaireButton(qint64 chatId)
+Telegram::ReplyKeyboardMarkup Core::startFinishButton()
 {
     KeyboardButton finishButton(tr("Finish"));
     KeyboardButton cancelButton(tr("Cancel"));
 
-    ReplyKeyboardMarkup keyboard = {{finishButton}, {cancelButton}};
-    //  keyboard .resize_keyboard = true;
+    return {{finishButton}, {cancelButton}};
+}
 
+void Core::startQuestionnaireButton(qint64 chatId)
+{
     // Sending reply keyboard
     sendMessage({.chat_id = chatId,
                  .text = tr("Please click 'Finish' button finished and save result or 'Cancel' to cancel"),
-                 .reply_markup = keyboard });
+                 .reply_markup = startFinishButton() });
 }
 
 void Core::clearButton(qint64 chatId)
@@ -1364,7 +1432,8 @@ void Core::nextQuestions(qint64 chatId, qint64 userId, qint32 questionId)
     case Question::EQuestionType::TEXT:
     {
         sendMessage({.chat_id = chatId,
-                     .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text())});
+                     .text = tr("(%1/%2) %3").arg(_questionnaire->questionPosition(questionId)).arg(_questionnaire->questionCount()).arg(question.text()),
+                     .reply_markup = startFinishButton()});
 
         break;
     }
