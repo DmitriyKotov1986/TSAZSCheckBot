@@ -60,7 +60,7 @@ void TConfig::makeConfig(const QString& configFileName)
     ini.setValue("DataBase", "TSAZSCheckBotDB");
     ini.setValue("UID", "user");
     ini.setValue("PWD", "password");
-    ini.setValue("ConnectionOprions", "");
+    ini.setValue("ConnectionOptions", "");
     ini.setValue("Port", "3306");
     ini.setValue("Host", "localhost");
 
@@ -122,25 +122,25 @@ TConfig::TConfig(const QString& configFileName)
 
     //Database
     ini.beginGroup("DATABASE");
-    _dbConnectionInfo.db_Driver = ini.value("Driver", "QODBC").toString();
-    if (_dbConnectionInfo.db_Driver.isEmpty())
+    _dbConnectionInfo.driver = ini.value("Driver", "QODBC").toString();
+    if (_dbConnectionInfo.driver.isEmpty())
     {
         _errorString = "Key value [DATABASE]/Driver cannot be empty";
 
         return;
     }
-    _dbConnectionInfo.db_DBName = ini.value("DataBase", "DB").toString();
-    if (_dbConnectionInfo.db_DBName.isEmpty())
+    _dbConnectionInfo.dbName = ini.value("DataBase", "DB").toString();
+    if (_dbConnectionInfo.dbName.isEmpty())
     {
         _errorString = "Key value [DATABASE]/DB cannot be empty";
 
         return;
     }
-    _dbConnectionInfo.db_UserName = ini.value("UID", "").toString();
-    _dbConnectionInfo.db_Password = ini.value("PWD", "").toString();
-    _dbConnectionInfo.db_ConnectOptions = ini.value("ConnectionOptions", "").toString();
-    _dbConnectionInfo.db_Port = ini.value("Port", "").toUInt();
-    _dbConnectionInfo.db_Host = ini.value("Host", "localhost").toString();
+    _dbConnectionInfo.userName = ini.value("UID", "").toString();
+    _dbConnectionInfo.password = ini.value("PWD", "").toString();
+    _dbConnectionInfo.connectOptions = ini.value("ConnectionOptions", "").toString();
+    _dbConnectionInfo.port = ini.value("Port", "").toUInt();
+    _dbConnectionInfo.host = ini.value("Host", "localhost").toString();
     ini.endGroup();
 
     //System

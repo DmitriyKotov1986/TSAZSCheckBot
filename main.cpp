@@ -96,12 +96,12 @@ int main(int argc, char *argv[])
     }
 
     //Таймер запуска
-    QTimer StartTimer;
-    StartTimer.setSingleShot(true);
+    QTimer startTimer;
+    startTimer.setSingleShot(true);
 
-    QObject::connect(&StartTimer, SIGNAL(timeout()), core, SLOT(start()));
+    QObject::connect(&startTimer, SIGNAL(timeout()), core, SLOT(start()));
 
-    StartTimer.start(0);
+    startTimer.start(0);
 
     const auto res = a.exec();
 
